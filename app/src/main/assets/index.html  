@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a1018">
+<title>WaterSims — Scheme One · Zambia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#070d15; --deep:#0a1018; --panel:#101c2b; --panel2:#16283c; --line:#1e3purple;
+  --line:#1e3550; --line2:#2b4a6d;
+  --water:#22d3ee; --water2:#7ef0ff; --waterD:#0e7490;
+  --copper:#f97316; --copper2:#fdba74; --copperD:#9a3412;
+  --gold:#fbbf24; --power:#facc15;
+  --grass:#22c55e; --acid:#4ade80;
+  --danger:#ef4444; --danger2:#fca5a5;
+  --reg:#a855f7; --reg2:#d8b4fe;
+  --earth:#b45309;
+  --ink:#eaf4fb; --dim:#9db4cc; --faint:#5f7893;
+  --disp:'Outfit',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--disp);color:var(--ink);background:var(--night);user-select:none}
+body::before{content:"";position:fixed;inset:-15%;z-index:0;pointer-events:none;opacity:.55;
+  background:radial-gradient(620px 420px at 18% 8%,rgba(34,211,238,.14),transparent 62%),
+             radial-gradient(680px 480px at 88% 82%,rgba(249,115,22,.12),transparent 62%),
+             radial-gradient(520px 380px at 62% 30%,rgba(168,85,247,.08),transparent 60%);
+  animation:drift 38s ease-in-out infinite alternate}
+@keyframes drift{from{transform:translate3d(-2%,-1%,0)}to{transform:translate3d(2%,2%,0)}}
+body::after{content:"";position:fixed;inset:0;z-index:70;pointer-events:none;opacity:.045;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:var(--deep);border-radius:8px}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--water),var(--waterD));border-radius:8px;border:2px solid var(--deep)}
+::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,var(--copper2),var(--copper))}
+*{scrollbar-width:thin;scrollbar-color:var(--waterD) var(--deep)}
+button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
+button:focus-visible{outline:2px solid var(--water);outline-offset:2px}
+.hide{display:none!important}
+
+/* ══ TITLE ══ */
+#title{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:22px;gap:16px;background:radial-gradient(120% 90% at 50% 0%,#123049 0%,#070d15 68%);overflow-y:auto}
+#title.gone{animation:fadeOut .5s forwards}
+@keyframes fadeOut{to{opacity:0;visibility:hidden}}
+.logo{display:flex;align-items:center;gap:14px;animation:pop .7s cubic-bezier(.2,.9,.3,1.3) both}
+@keyframes pop{from{opacity:0;transform:translateY(20px) scale(.94)}to{opacity:1;transform:none}}
+.logo h1{font-size:clamp(34px,9vw,58px);font-weight:900;letter-spacing:-.02em;line-height:.95}
+.logo h1 span{background:linear-gradient(100deg,var(--water2),var(--water) 40%,var(--copper));-webkit-background-clip:text;background-clip:text;color:transparent}
+.logo p{font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;color:var(--copper2);margin-top:6px}
+.tagline{max-width:520px;text-align:center;font-size:14px;line-height:1.65;color:var(--dim);animation:pop .7s .1s both}
+.tagline b{color:var(--ink)}
+.diffrow{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;animation:pop .7s .18s both}
+.diff{padding:11px 17px;border-radius:13px;border:1px solid var(--line2);background:rgba(16,28,43,.8);transition:.18s;min-width:104px}
+.diff b{display:block;font-size:13px;font-weight:800;letter-spacing:.03em}
+.diff small{font-family:var(--mono);font-size:9px;color:var(--faint)}
+.diff:hover{transform:translateY(-2px);border-color:var(--water)}
+.diff.on{background:linear-gradient(135deg,var(--water),var(--waterD));border-color:var(--water2);color:#04222c}
+.diff.on small{color:#04222c;opacity:.8}
+.bigbtn{padding:17px 44px;border-radius:16px;font-size:19px;font-weight:900;letter-spacing:.04em;color:#2a1000;
+  background:linear-gradient(135deg,var(--copper2),var(--copper) 45%,#ea580c);border:1px solid var(--copper2);
+  box-shadow:0 10px 34px rgba(249,115,22,.42),inset 0 1px 0 rgba(255,255,255,.45);transition:.18s;animation:pop .7s .26s both}
+.bigbtn:hover{transform:translateY(-3px);box-shadow:0 16px 44px rgba(249,115,22,.55)}
+.bigbtn:active{transform:translateY(1px)}
+.ghost{padding:12px 24px;border-radius:13px;border:1px solid var(--line2);font-size:13px;font-weight:600;color:var(--dim);background:rgba(16,28,43,.7);transition:.18s}
+.ghost:hover{border-color:var(--water);color:var(--water2);transform:translateY(-2px)}
+.titlerow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;animation:pop .7s .32s both}
+.credits{font-family:var(--mono);font-size:9.5px;color:var(--faint);text-align:center;line-height:1.8;max-width:460px;animation:pop .7s .4s both}
+
+/* ══ GAME SHELL ══ */
+#game{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column}
+#hud{flex:none;display:flex;align-items:center;gap:8px;padding:8px 10px;
+  background:linear-gradient(180deg,rgba(22,40,60,.96),rgba(10,16,24,.94));border-bottom:1px solid var(--line2);
+  box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.stat{display:flex;flex-direction:column;line-height:1.15;padding:4px 9px;border-radius:10px;background:rgba(7,13,21,.6);border:1px solid var(--line)}
+.stat b{font-family:var(--mono);font-size:14px;font-weight:700}
+.stat small{font-size:8px;letter-spacing:.14em;color:var(--faint)}
+#sFunds b{color:var(--gold)}#sDay b{color:var(--water2)}#sTank b{color:var(--water)}
+#sFunds.flash{animation:flashGold .6s}
+@keyframes flashGold{0%,100%{background:rgba(7,13,21,.6)}40%{background:rgba(251,191,36,.3)}}
+#powerChip{display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:99px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;
+  border:1px solid var(--power);color:var(--power);background:rgba(250,204,21,.1);transition:.3s}
+#powerChip.off{border-color:var(--danger);color:var(--danger2);background:rgba(239,68,68,.12);animation:blink 1.1s infinite}
+@keyframes blink{50%{opacity:.5}}
+.hudbtn{width:36px;height:36px;flex:none;border-radius:10px;border:1px solid var(--line2);display:grid;place-items:center;background:rgba(7,13,21,.6);font-size:15px;transition:.16s}
+.hudbtn:hover{border-color:var(--water);transform:translateY(-1px)}
+.hudbtn[aria-pressed="false"]{opacity:.5}
+#spacer{flex:1}
+
+/* ══ STAGE ══ */
+#stage{position:relative;flex:1;min-height:0;overflow:hidden;background:#0d1a26}
+#map{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation}
+#stage.shake{animation:shake .42s}
+@keyframes shake{10%,90%{transform:translate(-2px,1px)}30%,70%{transform:translate(4px,-2px)}50%{transform:translate(-4px,2px)}}
+#objective{position:absolute;top:9px;left:9px;right:9px;display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:12px;
+  background:rgba(7,13,21,.86);border:1px solid var(--line2);backdrop-filter:blur(7px);pointer-events:none}
+#objIcon{font-size:17px}
+#objText{font-size:12.5px;font-weight:600;line-height:1.35}
+#objText small{display:block;font-family:var(--mono);font-size:9.5px;color:var(--faint);font-weight:400;margin-top:2px}
+#kpis{position:absolute;left:9px;bottom:9px;display:flex;gap:6px;flex-wrap:wrap;pointer-events:none}
+.kpi{padding:5px 9px;border-radius:9px;background:rgba(7,13,21,.84);border:1px solid var(--line);font-family:var(--mono);font-size:9.5px;line-height:1.3}
+.kpi b{display:block;font-size:12px}
+.kpi small{color:var(--faint);font-size:8px;letter-spacing:.1em}
+#weather{position:absolute;right:9px;bottom:9px;padding:6px 11px;border-radius:9px;background:rgba(7,13,21,.84);border:1px solid var(--line);
+  font-family:var(--mono);font-size:9.5px;color:var(--dim);pointer-events:none;text-align:right;line-height:1.5}
+#pauseVeil{position:absolute;inset:0;display:none;place-items:center;background:rgba(7,13,21,.72);backdrop-filter:blur(3px);z-index:5}
+#pauseVeil span{font-size:26px;font-weight:900;letter-spacing:.3em;color:var(--gold);border:2px solid var(--gold);padding:14px 26px 14px 34px;border-radius:14px}
+
+/* ══ LECTURER ══ */
+#lecturer{flex:none;display:flex;gap:10px;padding:10px 12px;background:linear-gradient(180deg,rgba(16,28,43,.98),rgba(10,16,24,.98));
+  border-top:1px solid var(--line2);border-bottom:1px solid var(--line);align-items:flex-start;max-height:34vh;overflow-y:auto}
+#lecturer.dim{opacity:.62}
+#avatar{flex:none;width:52px;height:52px;border-radius:14px;overflow:hidden;border:2px solid var(--copper);box-shadow:0 0 16px rgba(249,115,22,.4);background:#1b2f45}
+#avatar.happy{border-color:var(--acid);box-shadow:0 0 16px rgba(74,222,128,.5)}
+#avatar.alert{border-color:var(--danger);box-shadow:0 0 16px rgba(239,68,68,.5);animation:blink .8s infinite}
+.lect-body{flex:1;min-width:0}
+.lect-name{font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:var(--copper2);margin-bottom:3px}
+#lectText{font-size:13px;line-height:1.55;color:var(--ink)}
+#lectText b{color:var(--water2)}
+#lectText .k{color:var(--gold);font-family:var(--mono)}
+.lect-actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+#lectNext{padding:8px 18px;border-radius:10px;font-size:12px;font-weight:800;color:#04222c;background:linear-gradient(135deg,var(--water2),var(--water));transition:.16s}
+#lectNext:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(34,211,238,.4)}
+#lectSkip{font-family:var(--mono);font-size:9.5px;color:var(--faint);text-decoration:underline;padding:8px 4px}
+
+/* ══ ACTIONS ══ */
+#actions{flex:none;display:grid;grid-template-columns:repeat(6,1fr);gap:7px;padding:9px 10px calc(9px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(10,16,24,.98),rgba(7,13,21,1))}
+.act{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:11px 4px;border-radius:13px;
+  border:1px solid var(--line2);background:linear-gradient(180deg,var(--panel2),var(--panel));transition:.15s;overflow:hidden;min-height:62px}
+.act i{font-style:normal;font-size:19px;line-height:1}
+.act b{font-size:10.5px;font-weight:800;letter-spacing:.05em}
+.act small{font-family:var(--mono);font-size:8px;color:var(--faint)}
+.act:hover:not(:disabled){transform:translateY(-2px);border-color:var(--water)}
+.act:active:not(:disabled){transform:translateY(1px)}
+.act:disabled{opacity:.36;filter:saturate(.3)}
+.act.on{background:linear-gradient(180deg,var(--water),var(--waterD));border-color:var(--water2);color:#04222c;box-shadow:0 0 20px rgba(34,211,238,.45)}
+.act.on small{color:#04222c;opacity:.75}
+.act.hot{border-color:var(--danger);animation:hotPulse 1.2s infinite}
+@keyframes hotPulse{0%,100%{box-shadow:0 0 0 rgba(239,68,68,0)}50%{box-shadow:0 0 20px rgba(239,68,68,.6)}}
+.act.ready{border-color:var(--gold);box-shadow:0 0 16px rgba(251,191,36,.35)}
+.act .badge{position:absolute;top:4px;right:5px;min-width:17px;height:17px;border-radius:9px;background:var(--danger);color:#fff;
+  font-family:var(--mono);font-size:9.5px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+.act.hl{animation:hlRing 1s infinite}
+@keyframes hlRing{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.7)}50%{box-shadow:0 0 0 9px rgba(251,191,36,0)}}
+
+/* ══ DRAWERS ══ */
+.drawer{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;background:rgba(4,8,14,.8);backdrop-filter:blur(6px)}
+.drawer.open{display:flex;animation:fadeIn .25s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.sheet{margin-top:auto;max-height:88vh;display:flex;flex-direction:column;border-radius:20px 20px 0 0;border:1px solid var(--line2);border-bottom:none;
+  background:linear-gradient(180deg,var(--panel2),var(--deep));box-shadow:0 -14px 50px rgba(0,0,0,.6);animation:slideUp .32s cubic-bezier(.2,.9,.3,1)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+.sheet-h{flex:none;display:flex;align-items:center;gap:10px;padding:15px 17px;border-bottom:1px solid var(--line)}
+.sheet-h h2{font-size:17px;font-weight:900;letter-spacing:.02em}
+.sheet-h .x{margin-left:auto;width:32px;height:32px;border-radius:9px;border:1px solid var(--line2);font-size:15px;color:var(--dim)}
+.sheet-h .x:hover{border-color:var(--danger);color:var(--danger2)}
+.sheet-b{overflow-y:auto;padding:15px 17px calc(20px + env(safe-area-inset-bottom))}
+.tabs{display:flex;gap:6px;padding:11px 17px 0;flex-wrap:wrap}
+.tab{padding:7px 14px;border-radius:99px;border:1px solid var(--line2);font-size:11px;font-weight:700;color:var(--dim);transition:.15s}
+.tab.on{background:linear-gradient(135deg,var(--copper2),var(--copper));color:#2a1000;border-color:var(--copper2)}
+.lesson{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:11px;background:linear-gradient(180deg,rgba(22,40,60,.6),rgba(16,28,43,.6))}
+.lesson h3{font-size:14.5px;font-weight:800;margin-bottom:7px;display:flex;align-items:center;gap:8px}
+.lesson h3 i{font-style:normal;font-size:17px}
+.lesson p{font-size:12.5px;line-height:1.7;color:var(--dim);margin-bottom:7px}
+.lesson p b{color:var(--ink)}
+.formula{font-family:var(--mono);font-size:11px;color:var(--water2);background:rgba(7,13,21,.7);border:1px dashed var(--line2);
+  border-radius:9px;padding:8px 11px;margin:8px 0;line-height:1.7}
+.trybtn{padding:7px 15px;border-radius:9px;border:1px solid var(--copper);color:var(--copper2);font-size:11px;font-weight:700;transition:.15s}
+.trybtn:hover{background:rgba(249,115,22,.15)}
+.shopitem{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:10px;
+  background:linear-gradient(180deg,rgba(22,40,60,.6),rgba(16,28,43,.6));transition:.18s}
+.shopitem.owned{border-color:var(--acid);opacity:.75}
+.shopitem.locked{opacity:.45}
+.si-icon{flex:none;width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:22px;
+  background:linear-gradient(135deg,rgba(34,211,238,.2),rgba(249,115,22,.15));border:1px solid var(--line2)}
+.si-body{flex:1;min-width:0}
+.si-body b{font-size:13.5px;font-weight:800;display:block}
+.si-body p{font-size:11px;color:var(--dim);line-height:1.5;margin-top:3px}
+.si-body em{font-style:normal;font-family:var(--mono);font-size:9.5px;color:var(--copper2);display:block;margin-top:4px}
+.buy{flex:none;padding:10px 14px;border-radius:11px;font-family:var(--mono);font-size:11.5px;font-weight:700;color:#2a1000;
+  background:linear-gradient(135deg,var(--gold),#f59e0b);transition:.15s;white-space:nowrap}
+.buy:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 18px rgba(251,191,36,.4)}
+.buy:disabled{opacity:.4;filter:saturate(.3)}
+.buy.own{background:none;border:1px solid var(--acid);color:var(--acid)}
+
+/* ══ REPORT ══ */
+#report{position:fixed;inset:0;z-index:60;display:none;place-items:center;padding:16px;background:rgba(4,8,14,.86);backdrop-filter:blur(8px);overflow-y:auto}
+#report.open{display:grid}
+.rcard{width:min(560px,100%);max-height:92vh;overflow-y:auto;border-radius:20px;border:1px solid var(--line2);
+  background:linear-gradient(180deg,var(--panel2),var(--deep));box-shadow:0 24px 70px rgba(0,0,0,.7);padding:22px;animation:pop .45s cubic-bezier(.2,.9,.3,1.2)}
+.rhead{text-align:center;margin-bottom:18px}
+.rhead .seal{font-size:11px;font-family:var(--mono);letter-spacing:.24em;color:var(--reg2)}
+.rhead h2{font-size:23px;font-weight:900;margin:6px 0}
+.grade{display:inline-grid;place-items:center;width:88px;height:88px;border-radius:24px;font-size:44px;font-weight:900;margin:10px 0;
+  border:3px solid currentColor;box-shadow:0 0 34px currentColor}
+.rhead p{font-size:12.5px;color:var(--dim);line-height:1.6}
+.scorebar{margin-bottom:11px}
+.sb-top{display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:5px}
+.sb-top b{font-family:var(--mono)}
+.sb-track{height:9px;border-radius:5px;background:rgba(7,13,21,.8);overflow:hidden;position:relative}
+.sb-fill{height:100%;border-radius:5px;transition:width .9s cubic-bezier(.2,.9,.3,1)}
+.sb-note{font-family:var(--mono);font-size:9.5px;color:var(--faint);margin-top:3px}
+.league{border:1px solid var(--line);border-radius:13px;overflow:hidden;margin:16px 0}
+.lrow{display:flex;align-items:center;gap:10px;padding:9px 13px;font-size:12px;border-bottom:1px solid rgba(30,53,80,.6)}
+.lrow:last-child{border-bottom:none}
+.lrow.me{background:linear-gradient(90deg,rgba(249,115,22,.22),transparent);font-weight:800}
+.lrow .pos{font-family:var(--mono);font-size:11px;color:var(--faint);width:22px}
+.lrow .sc{margin-left:auto;font-family:var(--mono);font-weight:700;color:var(--water2)}
+.rbtns{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}
+.rbtns button{flex:1;min-width:130px;padding:14px;border-radius:13px;font-size:13.5px;font-weight:800}
+
+/* ══ TOASTS ══ */
+#toasts{position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;gap:7px;
+  width:min(400px,92vw);pointer-events:none}
+.toast{display:flex;gap:9px;align-items:flex-start;padding:10px 13px;border-radius:12px;font-size:12px;line-height:1.5;
+  background:rgba(10,16,24,.96);border:1px solid var(--line2);box-shadow:0 8px 28px rgba(0,0,0,.6);animation:tIn .3s cubic-bezier(.2,.9,.3,1.2)}
+.toast.out{animation:tOut .3s forwards}
+@keyframes tIn{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+@keyframes tOut{to{opacity:0;transform:translateY(-14px)}}
+.toast b{flex:none;font-size:14px}
+.toast.ok{border-color:rgba(74,222,128,.6)}.toast.ok b{color:var(--acid)}
+.toast.warn{border-color:rgba(251,191,36,.6)}.toast.warn b{color:var(--gold)}
+.toast.bad{border-color:rgba(239,68,68,.6)}.toast.bad b{color:var(--danger2)}
+.toast.info{border-color:rgba(34,211,238,.6)}.toast.info b{color:var(--water2)}
+.toast.reg{border-color:rgba(168,85,247,.6)}.toast.reg b{color:var(--reg2)}
+
+@media(max-width:720px){
+  #actions{grid-template-columns:repeat(3,1fr)}
+  .act{min-height:58px}
+  #sDay small,#sTank small{display:none}
+  .stat b{font-size:12.5px}
+  #lectText{font-size:12.5px}
+  #avatar{width:44px;height:44px}
+  #objective{padding:7px 10px}#objText{font-size:11.5px}
+}
+@media(max-width:380px){
+  .stat{padding:3px 7px}.stat b{font-size:11.5px}
+  #powerChip{padding:5px 8px;font-size:9px}
+  .hudbtn{width:32px;height:32px}
+}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition-duration:.01s!important}}
+</style>
+</head>
+<body>
+
+<!-- ══════════ TITLE ══════════ -->
+<div id="title">
+  <div class="logo">
+    <svg width="62" height="62" viewBox="0 0 64 64" fill="none">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#7ef0ff"/><stop offset=".5" stop-color="#22d3ee"/><stop offset="1" stop-color="#f97316"/></linearGradient></defs>
+      <path d="M32 5C32 5 13 26 13 39a19 19 0 0 0 38 0C51 26 32 5 32 5Z" stroke="url(#lg)" stroke-width="3" fill="rgba(34,211,238,.14)"/>
+      <path d="M20 41h24M23 48h18" stroke="#f97316" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="32" cy="33" r="5" fill="#fbbf24"/>
+    </svg>
+    <div><h1>Water<span>Sims</span></h1><p>SCHEME ONE · ZAMBIA</p></div>
+  </div>
+  <p class="tagline">You run a community water scheme. <b>Abstract, pump, store, supply, meter and bill</b> — while ZESCO cuts the power, pipes burst, and NWASCO watches every number.</p>
+  <div class="diffrow">
+    <button class="diff on" data-d="0"><b>TRAINEE</b><small>K18,000 · gentle</small></button>
+    <button class="diff" data-d="1"><b>OPERATOR</b><small>K12,000 · real</small></button>
+    <button class="diff" data-d="2"><b>MANAGER</b><small>K8,000 · harsh</small></button>
+  </div>
+  <button class="bigbtn" id="btnStart">▶ START WITH THE LECTURER</button>
+  <div class="titlerow">
+    <button class="ghost" id="btnSkipTut">Skip training · play now</button>
+    <button class="ghost hide" id="btnContinue">↺ Continue saved scheme</button>
+    <button class="ghost" id="btnAcademyTitle">🎓 Academy</button>
+  </div>
+  <p class="credits">NWASCO · WARMA · ZESCO · Kwacha<br>Real pump curves, tank mass-balance, non-revenue water and tariff economics — hidden under six buttons.</p>
+</div>
+
+<!-- ══════════ GAME ══════════ -->
+<div id="game" class="hide">
+  <div id="hud">
+    <div class="stat" id="sFunds"><b>K12,000</b><small>FUNDS</small></div>
+    <div class="stat" id="sDay"><b>D15 06:00</b><small>SCHEME CLOCK</small></div>
+    <div class="stat" id="sTank"><b>42%</b><small>TANK</small></div>
+    <div id="powerChip"><span>⚡</span><span id="powerTxt">GRID ON</span></div>
+    <div id="spacer"></div>
+    <button class="hudbtn" id="btnSpeed" title="Game speed">1×</button>
+    <button class="hudbtn" id="btnSound" aria-pressed="true" title="Sound">🔊</button>
+    <button class="hudbtn" id="btnPause" title="Pause">⏸</button>
+    <button class="hudbtn" id="btnMenu" title="Menu">☰</button>
+  </div>
+
+  <div id="stage">
+    <canvas id="map"></canvas>
+    <div id="objective"><span id="objIcon">🎯</span><div id="objText">Loading…<small></small></div></div>
+    <div id="kpis">
+      <div class="kpi"><b id="kSupply">0h</b><small>SUPPLY TODAY</small></div>
+      <div class="kpi"><b id="kNrw">0%</b><small>NRW</small></div>
+      <div class="kpi"><b id="kCl">0.40</b><small>CHLORINE mg/L</small></div>
+      <div class="kpi"><b id="kAbs">0</b><small>ABSTRACTED m³</small></div>
+    </div>
+    <div id="weather"><span id="wSeason">DRY SEASON</span><br><span id="wHint">Kariba low · shedding likely</span></div>
+    <div id="pauseVeil"><span>PAUSED</span></div>
+  </div>
+
+  <div id="lecturer">
+    <div id="avatar">
+      <svg viewBox="0 0 64 64" width="100%" height="100%">
+        <rect width="64" height="64" fill="#1b2f45"/>
+        <circle cx="32" cy="58" r="20" fill="#f97316"/>
+        <path d="M12 58a20 20 0 0 1 40 0Z" fill="#fb923c"/>
+        <rect x="26" y="44" width="12" height="10" fill="#7c4a2d"/>
+        <ellipse cx="32" cy="32" rx="13" ry="15" fill="#8d5a34"/>
+        <path d="M19 26a13 13 0 0 1 26 0Z" fill="#1f2937"/>
+        <path d="M14 26h36l-3-5a15 15 0 0 0-30 0Z" fill="#facc15"/>
+        <rect x="12" y="25" width="40" height="3.5" rx="1.7" fill="#eab308"/>
+        <circle cx="26" cy="32" r="3.4" fill="#fff"/><circle cx="38" cy="32" r="3.4" fill="#fff"/>
+        <circle cx="26.6" cy="32.4" r="1.7" fill="#111827"/><circle cx="38.6" cy="32.4" r="1.7" fill="#111827"/>
+        <path d="M22 32h8M34 32h8M30 32h4" stroke="#374151" stroke-width="1.2" fill="none"/>
+        <path d="M27 41q5 3.5 10 0" stroke="#4b2e19" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <path d="M22 52h20" stroke="#fde68a" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="lect-body">
+      <div class="lect-name">ENG. CHANDA MWILA · NWASCO-CERTIFIED TRAINER</div>
+      <div id="lectText"></div>
+      <div class="lect-actions">
+        <button id="lectNext">NEXT ▸</button>
+        <button id="lectSkip">skip training</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="actions">
+    <button class="act" id="aPump"><i>⚙️</i><b>PUMP</b><small id="pumpSub">5.5 kW</small></button>
+    <button class="act" id="aFix"><i>🔧</i><b>FIX LEAK</b><small id="fixSub">no leaks</small></button>
+    <button class="act" id="aCl"><i>🧪</i><b>CHLORINE</b><small>K80 / dose</small></button>
+    <button class="act" id="aRead"><i>📖</i><b>READ</b><small id="readSub">window 25–28</small></button>
+    <button class="act" id="aBill"><i>💰</i><b>BILL</b><small id="billSub">not read</small></button>
+    <button class="act" id="aShop"><i>🏗️</i><b>UPGRADE</b><small id="shopSub">6 options</small></button>
+  </div>
+</div>
+
+<!-- ══════════ ACADEMY ══════════ -->
+<div class="drawer" id="academy">
+  <div class="sheet">
+    <div class="sheet-h"><span style="font-size:20px">🎓</span><h2>Academy</h2><button class="x" data-close="academy">✕</button></div>
+    <div class="tabs">
+      <button class="tab on" data-atab="lessons">Lessons</button>
+      <button class="tab" data-atab="kpi">NWASCO KPIs</button>
+      <button class="tab" data-atab="who">Who's who</button>
+    </div>
+    <div class="sheet-b" id="academyBody"></div>
+  </div>
+</div>
+
+<!-- ══════════ SHOP ══════════ -->
+<div class="drawer" id="shop">
+  <div class="sheet">
+    <div class="sheet-h"><span style="font-size:20px">🏗️</span><h2>Capital Upgrades</h2>
+      <span style="margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--gold)" id="shopFunds">K0</span>
+      <button class="x" data-close="shop">✕</button></div>
+    <div class="sheet-b" id="shopBody"></div>
+  </div>
+</div>
+
+<!-- ══════════ MENU ══════════ -->
+<div class="drawer" id="menu">
+  <div class="sheet">
+    <div class="sheet-h"><span style="font-size:20px">☰</span><h2>Scheme Menu</h2><button class="x" data-close="menu">✕</button></div>
+    <div class="sheet-b">
+      <div id="menuStats" style="font-family:var(--mono);font-size:11.5px;color:var(--dim);line-height:2;margin-bottom:14px"></div>
+      <div class="rbtns">
+        <button class="ghost" id="mAcademy">🎓 Academy</button>
+        <button class="ghost" id="mSave">💾 Save scheme</button>
+        <button class="ghost" id="mRestart" style="border-color:var(--danger);color:var(--danger2)">⟲ Restart scheme</button>
+        <button class="ghost" id="mTitle">🏠 Main menu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ REPORT ══════════ -->
+<div id="report"><div class="rcard" id="reportCard"></div></div>
+<div id="toasts"></div>
+
+<script>
+"use strict";
+/* ═══════════════════════════════════════════════════════════════
+   WaterSims — Scheme One. Single-file water-utility tycoon/trainer.
+   ═══════════════════════════════════════════════════════════════ */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t, rnd=(a,b)=>a+Math.random()*(b-a);
+const K=n=>'K'+Math.round(n).toLocaleString('en-US');
+const BRIDGE=(typeof window.AndroidBridge!=='undefined')?window.AndroidBridge:null;
+
+/* ── difficulty ── */
+const DIFF=[
+  {name:'TRAINEE',funds:18000,leakRate:.55,demand:.85,collect:.82,shed:.7},
+  {name:'OPERATOR',funds:12000,leakRate:1,demand:1,collect:.74,shed:1},
+  {name:'MANAGER',funds:8000,leakRate:1.5,demand:1.15,collect:.66,shed:1.35}
+];
+const TARIFF=6.5, POWER_KWH=2.2, OPEX_DAY=110, DOSE_COST=80, READ_COST=150, REPAIR_COST=340;
+const WARMA_CAP=115;            // m³/day abstraction licence
+const START_DAY=15, INSPECT_DAY=30, READ_A=25, READ_B=28;
+const VW=1000, VH=700;          // virtual map space
+
+const HOUSE_POS=[
+  {x:140,y:400},{x:320,y:400},{x:500,y:400},{x:680,y:400},{x:860,y:400},
+  {x:140,y:590},{x:320,y:590},{x:500,y:590},{x:680,y:590},{x:860,y:590}
+];
+const DIURNAL=[.35,.3,.3,.3,.4,.8,1.6,1.9,1.7,1.2,1,1,1.1,1,.9,1,1.3,1.7,1.8,1.5,1.1,.8,.6,.45];
+const SHED_BLOCKS=[[8,12],[16,20],[6,10],[14,18],[10,14],[18,22]];
+
+/* ── state ── */
+let G=null, running=false, paused=false, speed=1, soundOn=true, tReal=0, lastNow=0;
+let particles=[], shakeT=0, hoverLeak=-1;
+
+function newGame(diff,withTut){
+  const D=DIFF[diff];
+  G={
+    diff, day:START_DAY, hour:6, min:0, funds:D.funds, xp:0, level:1,
+    tank:{cap:50,vol:21}, pump:{on:false}, power:{on:true,block:0},
+    aquifer:{vol:400,cap:400,recharge:3.2},
+    houses:HOUSE_POS.map((p,i)=>({x:p.x,y:p.y,id:i+1,type:i===2?'clinic':i===7?'school':i===4?'kiosk':'house',
+      used:0,bill:0,read:false,paid:0,conn:true,dry:0,sat:1,seed:Math.random()})),
+    leaks:[], chlorine:.42, crew:{busy:0,max:1},
+    reading:false, readProg:0, readDone:false, billed:false,
+    produced:0, billedVol:0, lostVol:0, collected:0, supplyH:0, supplyTotal:0, days:0,
+    absToday:0, warmaWarn:0, warmaFine:0, clLowH:0, choleraRisk:0, outbreak:false,
+    hot:false, up:{tank:false,solar:false,vfd:false,crew:false,prepaid:false,zones:false},
+    tut:withTut, tutStep:0, tutDone:!withTut, endless:false, nextInspect:INSPECT_DAY,
+    events:[], log:[], dead:false, lastEventDay:0, newConnDay:[20,26]
+  };
+  particles=[]; running=true; paused=false;
+  $('#title').classList.add('gone'); setTimeout(()=>$('#title').classList.add('hide'),500);
+  $('#game').classList.remove('hide');
+  buildShop(); renderAcademy('lessons'); resize();
+  if(withTut){ tutStart(); } else { lectSay("Right — you're on your own shift now. Keep the tank above zero, fix leaks fast, and read meters on days <b>25–28</b>. NWASCO inspects on day <b>30</b>. Good luck.",'normal'); }
+  toast('info',`Scheme One online · ${DIFF[diff].name} · ${K(G.funds)}`);
+  save();
+}
+
+/* ── physics ── */
+const SIM={
+  head(g){ return 30+(g.tank.vol/g.tank.cap)*9; },
+  pumpQ(g){ // m³/h
+    if(!g.pump.on) return 0;
+    let base=14.5*(1-(this.head(g)-30)/220);
+    if(!g.power.on) base*= g.up.solar?.42:0;
+    if(g.aquifer.vol<40) base*=.45;
+    return Math.max(0,base);
+  },
+  pumpKW(g){
+    const q=this.pumpQ(g)/3600, h=this.head(g);
+    if(q<=0) return 0;
+    const hyd=1000*9.81*q*h;                 // W
+    const eff=.52*(g.up.vfd?1.16:1);
+    return hyd/eff/1000+.35;
+  },
+  demand(g){ // m³/h
+    const n=g.houses.filter(h=>h.conn).length;
+    const f=DIURNAL[Math.floor(g.hour)%24];
+    return n*.35*f*DIFF[g.diff].demand*(g.hot?1.28:1);
+  },
+  leakQ(g){ let s=0; for(const l of g.leaks) s+=(.9+l.sev*2.6); return s*(g.up.zones?.6:1); },
+  residualDecay(g){ return .011*(1+(g.tank.vol/Math.max(g.tank.cap,1))*.6); }
+};
+
+/* ── time / main sim ── */
+function advance(h){
+  const g=G, D=DIFF[g.diff];
+  /* power schedule */
+  if(!g.tut){
+    const blk=SHED_BLOCKS[(g.day-START_DAY)%SHED_BLOCKS.length];
+    const shedHours=D.shed>=1.35?4.5:D.shed>=1?4:3;
+    const on=!(g.hour>=blk[0]&&g.hour<blk[0]+shedHours);
+    if(on!==g.power.on){
+      g.power.on=on;
+      if(!on){ audio.clunk(); shake(.5); toast('warn','ZESCO load-shedding — grid OFF. Your tank is the buffer.'); spark(); }
+      else { toast('ok','Grid restored. Pump window open.'); audio.chime(1); }
+    }
+  }
+  /* pump */
+  const q=SIM.pumpQ(g), kw=SIM.pumpKW(g);
+  if(q>0){
+    const vol=q*h;
+    const room=g.tank.cap-g.tank.vol;
+    const into=Math.min(vol,room);
+    const over=vol-into;
+    g.tank.vol+=into; g.aquifer.vol=Math.max(0,g.aquifer.vol-vol);
+    g.produced+=into; g.absToday+=vol; g.lostVol+=over;
+    g.funds-=kw*h*POWER_KWH;
+    if(over>.05&&Math.random()<h*.4) toast('warn','Tank overflowing — water wasted. Stop the pump when full.');
+  }
+  g.aquifer.vol=Math.min(g.aquifer.cap,g.aquifer.vol+g.aquifer.recharge*h);
+  /* demand + leaks */
+  const dem=SIM.demand(g)*h, lk=SIM.leakQ(g)*h;
+  const served=Math.min(dem,g.tank.vol);
+  g.tank.vol=Math.max(0,g.tank.vol-served-lk);
+  g.lostVol+=lk+Math.max(0,dem-served)*0;
+  const dry=dem-served>.001;
+  const per=served/Math.max(1,g.houses.filter(x=>x.conn).length);
+  for(const hs of g.houses){ if(!hs.conn)continue;
+    hs.used+=per; if(dry){hs.dry+=h;hs.sat=clamp(hs.sat-h*.035,0,1);} else {hs.dry=Math.max(0,hs.dry-h*2);hs.sat=clamp(hs.sat+h*.02,0,1);} }
+  if(!dry) g.supplyH+=h;
+  g.supplyTotal+=h;
+  /* kiosk / prepaid daily cash */
+  const share=g.up.prepaid?.95:.4;
+  g.funds+=served*TARIFF*share*(g.up.prepaid?.98:D.collect);
+  g.collected+=served*TARIFF*share*(g.up.prepaid?.98:D.collect);
+  g.billedVol+=served*share;
+  for(const hs of g.houses) if(hs.conn) hs.used=Math.max(0,hs.used-per*share);
+  /* chlorine */
+  g.chlorine=Math.max(0,g.chlorine-SIM.residualDecay(g)*h);
+  if(g.chlorine<.18) g.clLowH+=h; else g.clLowH=Math.max(0,g.clLowH-h*.5);
+  /* cholera risk */
+  if(g.supplyH<10&&g.chlorine<.2) g.choleraRisk=clamp(g.choleraRisk+h*2.4,0,100);
+  else g.choleraRisk=clamp(g.choleraRisk-h*.9,0,100);
+  if(g.choleraRisk>72&&!g.outbreak){
+    g.outbreak=true; g.funds-=2500; g.xp=Math.max(0,g.xp-60);
+    toast('bad','CHOLERA ALERT — households turned to shallow wells. MoH emergency response: K2,500.');
+    lectSay("This is the lesson that matters most. When supply hours collapse and chlorine is low, people fetch from shallow wells — and cholera follows. <b>Supply hours are a public-health indicator, not a convenience.</b>",'alert');
+    audio.alarm(); shake(1);
+  }
+  if(g.outbreak&&g.choleraRisk<25){ g.outbreak=false; toast('ok','Outbreak contained. Residual chlorine restored.'); }
+  /* WARMA */
+  if(g.absToday>WARMA_CAP&&g.warmaWarn<2){
+    g.warmaWarn++; g.funds-=600; g.warmaFine+=600;
+    toast('reg',`WARMA: abstraction ${Math.round(g.absToday)} m³ exceeds your ${WARMA_CAP} m³/day licence. Fine K600.`);
+    audio.alarm();
+  }
+  /* leaks grow */
+  for(const l of g.leaks) l.sev=Math.min(1,l.sev+h*.012);
+  /* crew */
+  if(g.crew.busy>0){ g.crew.busy=Math.max(0,g.crew.busy-h); if(g.crew.busy===0&&g.pendingFix){ finishFix(); } }
+  /* reading sweep */
+  if(g.reading){
+    g.readProg+=h/6;
+    if(g.readProg>=1){ g.reading=false; g.readDone=true;
+      for(const hs of g.houses) if(hs.conn){ hs.read=true; hs.bill=hs.used; }
+      toast('ok','Meter round complete. Bills ready to issue.'); audio.chime(2);
+      if(g.tut) tutNotify('read');
+    }
+  }
+  /* random events */
+  if(!g.tut&&Math.random()<h*.055*D.leakRate&&g.leaks.length<3) spawnLeak();
+  /* hour rollover */
+  g.hour+=h;
+  while(g.hour>=24){ g.hour-=24; endDay(); }
+}
+function endDay(){
+  const g=G;
+  g.day++; g.days++; g.xp+=50; g.funds-=OPEX_DAY;
+  g.supplyTotal=Math.max(g.supplyTotal,1);
+  g.lastSupplyH=g.supplyH; g.supplyH=0; g.absToday=0; g.hot=Math.random()<.3;
+  if(g.hot) toast('warn','Hot day — demand up 28%. Watch your storage.');
+  if(g.newConnDay.includes(g.day)){
+    const off=g.houses.filter(h=>!h.conn);
+    if(off.length){ off[0].conn=true; g.funds+=150; toast('ok',`New connection #${off[0].id} — K150 fee paid. Revenue up.`); audio.coin(); }
+  }
+  if(g.day>READ_B&&!g.readDone&&!g.up.prepaid&&!g.billed){
+    toast('bad','Reading window missed — bills will be estimated. Collection and NWASCO metering score suffer.');
+    for(const hs of g.houses) if(hs.conn){ hs.bill=hs.used*.8; hs.read=false; }
+    g.readDone=true;
+  }
+  if(g.day===READ_A&&!g.up.prepaid){ toast('info','📖 Meter reading window OPEN (days 25–28). Tap READ.'); lectSay("Reading window is open. <b>Consumption = current reading − previous reading.</b> Read accurately: NWASCO scores your metering ratio, and estimated bills destroy customer trust.",'normal'); }
+  if(g.day===g.nextInspect-2) lectSay("NWASCO inspection in two days. They score <b>supply hours, non-revenue water, collection efficiency, water quality and WARMA compliance</b>. Fix what you can.",'alert');
+  checkLevel();
+  if(g.funds<-2000&&!g.dead){ g.dead=true; showFail(); }
+  if(g.day>g.nextInspect){ showReport(); }
+  save();
+}
+function checkLevel(){
+  const lv=Math.floor(G.xp/300)+1;
+  if(lv>G.level){ G.level=lv; toast('ok',`Level ${lv} — new capital options unlocked.`); audio.chime(3); confetti(); buildShop(); }
+}
+
+/* ── actions ── */
+function togglePump(){
+  const g=G;
+  if(!g.power.on&&!g.up.solar){ toast('bad','No power. ZESCO is shedding — buy Solar + Battery to pump through outages.'); audio.err(); return; }
+  if(g.tank.vol>=g.tank.cap-.5&&!g.pump.on){ toast('warn','Tank already full.'); return; }
+  g.pump.on=!g.pump.on;
+  audio.click(); if(g.pump.on) audio.pumpStart(); else audio.pumpStop();
+  if(g.tut) tutNotify('pump');
+  syncUI();
+}
+function spawnLeak(){
+  const g=G, row=Math.random()<.5?320:510;
+  const l={x:rnd(120,880),y:row+rnd(-6,6),sev:rnd(.15,.4),id:Math.random()};
+  g.leaks.push(l);
+  toast('bad','PIPE BURST on the main — water is escaping. Tap FIX LEAK.');
+  audio.alarm(); shake(.8);
+  if(!g.leakTaught){ g.leakTaught=true;
+    lectSay("A burst. Notice the tank dropping faster — that is <b>non-revenue water</b>: you paid to pump it and nobody paid you for it. Leak flow rises with pressure, so fix fast.",'alert'); }
+  syncUI();
+}
+function fixLeak(idx){
+  const g=G;
+  if(!g.leaks.length){ toast('info','No leaks on the network right now.'); return; }
+  if(g.crew.busy>0){ toast('warn','Crew already on a job. Buy a second crew to work faster.'); audio.err(); return; }
+  if(g.funds<REPAIR_COST){ toast('bad',`Repair needs ${K(REPAIR_COST)}. Not enough funds.`); audio.err(); return; }
+  g.funds-=REPAIR_COST;
+  g.pendingFix=idx!=null?idx:0;
+  g.crew.busy=g.up.crew?1.1:2.2;
+  audio.click(); toast('info','Crew dispatched — repair in progress…');
+  syncUI();
+}
+function finishFix(){
+  const g=G, i=g.pendingFix; g.pendingFix=null;
+  if(g.leaks[i]){ const l=g.leaks[i]; splash(l.x,l.y); g.leaks.splice(i,1); }
+  g.xp+=15; checkLevel(); audio.chime(1);
+  toast('ok','Repair complete. Losses reduced.');
+  if(g.tut) tutNotify('fix');
+  syncUI();
+}
+function dose(){
+  const g=G;
+  if(g.funds<DOSE_COST){ toast('bad','Not enough funds for chlorine.'); audio.err(); return; }
+  if(g.chlorine>.62){ toast('warn','Residual already high — over-dosing wastes chemical and tastes bad.'); return; }
+  g.funds-=DOSE_COST; g.chlorine=Math.min(.85,g.chlorine+.26); g.xp+=5;
+  puff(430,150); audio.click(); toast('ok',`Chlorine dosed · residual ${g.chlorine.toFixed(2)} mg/L`);
+  checkLevel(); if(g.tut) tutNotify('cl'); syncUI();
+}
+function startRead(){
+  const g=G;
+  if(g.up.prepaid){ toast('info','Prepaid meters report automatically — no manual round needed.'); return; }
+  if(g.day<READ_A||g.day>READ_B){ toast('warn',`Reading window is days ${READ_A}–${READ_B}. Today is day ${g.day}.`); audio.err(); return; }
+  if(g.readDone){ toast('info','Already read this month. Issue the bills.'); return; }
+  if(g.reading) return;
+  if(g.funds<READ_COST){ toast('bad','Cannot pay the meter reader.'); audio.err(); return; }
+  g.funds-=READ_COST; g.reading=true; g.readProg=0; audio.click();
+  toast('info','Meter reader walking the network…'); syncUI();
+}
+function issueBills(){
+  const g=G;
+  if(g.up.prepaid){ toast('info','Prepaid customers pay as they use — nothing to bill.'); return; }
+  if(!g.readDone){ toast('warn','Read the meters first.'); audio.err(); return; }
+  if(g.billed){ toast('info','Bills already issued this cycle.'); return; }
+  const D=DIFF[g.diff];
+  let gross=0, vol=0;
+  const satAvg=g.houses.filter(h=>h.conn).reduce((s,h)=>s+h.sat,0)/Math.max(1,g.houses.filter(h=>h.conn).length);
+  const eff=clamp(D.collect*(g.houses.every(h=>h.read||!h.conn)?1:.72)*(.7+satAvg*.4),.3,.99);
+  for(const hs of g.houses){ if(!hs.conn)continue; gross+=hs.bill*TARIFF; vol+=hs.bill; hs.paid=hs.bill*TARIFF*eff; hs.bill=0; hs.used=0; hs.read=false; }
+  const net=gross*eff;
+  g.funds+=net; g.collected+=net; g.billedVol+=vol*eff; g.billed=true; g.readDone=false; g.xp+=30;
+  g.lastCollection=eff;
+  coinBurst(net);
+  audio.coin(); toast('ok',`Bills issued · collected ${K(net)} of ${K(gross)} (${Math.round(eff*100)}% collection efficiency)`);
+  lectSay(`That gap — ${K(gross-net)} uncollected — is why <b>collection efficiency</b> is a NWASCO indicator. Customers who trust their bill pay it. Estimated bills and dry taps destroy that trust.`,'happy');
+  checkLevel(); syncUI();
+}
+
+/* ── upgrades ── */
+const SHOP=[
+  {k:'tank',icon:'🛢️',name:'Bigger Storage Tank',cost:4500,lvl:1,desc:'Capacity 50 → 95 m³. Ride through long shedding blocks without dry taps.',teach:'Balancing storage'},
+  {k:'vfd',icon:'🎛️',name:'VFD Drive',cost:3200,lvl:1,desc:'Pump efficiency +16%. Same water, less electricity — never throttle at full speed.',teach:'Affinity laws: P ∝ N³'},
+  {k:'crew',icon:'👷',name:'Second Repair Crew',cost:2800,lvl:2,desc:'Repairs take half the time. Less water lost per burst.',teach:'Response time = lost volume'},
+  {k:'zones',icon:'🚰',name:'District Zone Valves',cost:3800,lvl:2,desc:'Leak flow −40%. Lower pressure at night, smaller bursts, easier isolation.',teach:'FAVAD: leak ∝ pressure^N'},
+  {k:'solar',icon:'☀️',name:'Solar + Battery',cost:9000,lvl:3,desc:'Pump at 42% through ZESCO load-shedding. Energy independence.',teach:'Storage vs generation'},
+  {k:'prepaid',icon:'📱',name:'Prepaid Meters',cost:6500,lvl:4,desc:'98% collection, automatic readings, no manual round. Customers pay as they use.',teach:'Commercial loss control'}
+];
+function buildShop(){
+  const b=$('#shopBody'); b.innerHTML='';
+  SHOP.forEach(it=>{
+    const owned=G&&G.up[it.k], locked=G&&G.level<it.lvl;
+    const el=document.createElement('div');
+    el.className='shopitem'+(owned?' owned':'')+(locked?' locked':'');
+    el.innerHTML=`<div class="si-icon">${it.icon}</div><div class="si-body"><b>${it.name}</b><p>${it.desc}</p><em>📘 ${it.teach}</em></div>`;
+    const btn=document.createElement('button');
+    btn.className='buy'+(owned?' own':'');
+    btn.textContent=owned?'✓ OWNED':locked?`LVL ${it.lvl}`:K(it.cost);
+    btn.disabled=owned||locked||(G&&G.funds<it.cost);
+    btn.onclick=()=>buy(it);
+    el.appendChild(btn); b.appendChild(el);
+  });
+  $('#shopFunds').textContent=G?K(G.funds):'K0';
+}
+function buy(it){
+  if(G.up[it.k]||G.funds<it.cost||G.level<it.lvl) return;
+  G.funds-=it.cost; G.up[it.k]=true; G.xp+=40;
+  if(it.k==='tank'){ G.tank.cap=95; }
+  if(it.k==='crew'){ G.crew.max=2; }
+  audio.chime(3); confetti(); checkLevel();
+  toast('ok',`${it.name} installed.`);
+  lectSay(`<b>${it.name}</b> — ${it.desc} The engineering idea behind it: <b>${it.teach}</b>.`,'happy');
+  buildShop(); syncUI(); save();
+}
+
+/* ── lecturer / tutorial ── */
+let lectTimer=null, lectFull='', lectIdx=0;
+function lectSay(html,mood){
+  const av=$('#avatar'); av.className=mood==='happy'?'happy':mood==='alert'?'alert':'';
+  $('#lecturer').classList.remove('dim');
+  lectFull=html; lectIdx=0; $('#lectText').innerHTML='';
+  clearInterval(lectTimer);
+  lectTimer=setInterval(()=>{
+    lectIdx+=3;
+    if(lectIdx>=lectFull.length){ lectIdx=lectFull.length; clearInterval(lectTimer); }
+    $('#lectText').innerHTML=lectFull.slice(0,lectIdx)+(lectIdx<lectFull.length?'▌':'');
+    if(lectIdx%9===0) audio.blip();
+  },16);
+}
+const TUT=[
+  {t:"Mwabuka buti! I'm <b>Eng. Chanda Mwila</b>. For the next few minutes I'm your trainer, and this borehole, pump and tank are your first scheme. Six buttons run the whole utility. Let's operate them.",next:1},
+  {t:"Left: the <b>borehole</b> — WARMA licenses how much you may abstract each day. Middle: the <b>pump</b>. Right: the <b>elevated tank</b>. Water flows source → pump → tank → houses.",next:1,hl:'map'},
+  {t:"The grid is ON. <b>Tap PUMP</b> to start lifting water into the tank.",req:g=>g.pump.on,hl:'aPump'},
+  {t:"Good. Watch the tank climb. A pump does real work: <b>power = ρ·g·Q·H ÷ efficiency</b>. More head or more flow means more kilowatts — and more Kwacha.",req:g=>g.tank.vol>32,hl:'aPump'},
+  {t:"Now the houses draw water. Morning peak is 06:00–09:00. The tank falls while demand runs — that's the balance you manage all day.",next:1},
+  {t:"⚡ <b>ZESCO has cut the power.</b> Load-shedding. Your pump just stopped and there is nothing you can do about the grid.",enter:g=>{g.power.on=false;g.pump.on=false;audio.clunk();shake(.6);spark();},next:1},
+  {t:"But look — <b>the houses are still supplied</b>, because the tank holds stored water. This is the whole reason utilities store: <b>storage beats pumping when the grid is unreliable.</b>",next:1},
+  {t:"Power is back. Now a real problem: a <b>burst main</b>. See the red spray on the map? Tap <b>FIX LEAK</b> to send your crew.",enter:g=>{g.power.on=true;spawnLeak();},req:g=>g.leaks.length===0,hl:'aFix'},
+  {t:"Repaired. That water you lost is <b>non-revenue water</b> — you paid to pump it, nobody paid you for it. Zambian utilities average 40–50% NRW. Keep yours under 25%.",next:1},
+  {t:"Last job: <b>chlorine</b>. Tap CHLORINE to keep a residual of 0.2–0.5 mg/L at the tap. It decays as water sits in the tank.",req:g=>g.chlorine>.55,hl:'aCl'},
+  {t:"Perfect. You now know the whole loop: <b>PUMP → STORE → SUPPLY → READ → BILL → FIX</b>. Days 25–28 read the meters, then issue bills. NWASCO inspects on day 30. Go and run your scheme.",next:1}
+];
+function tutStart(){ G.tut=true; G.tutStep=0; tutShow(); }
+function tutShow(){
+  const s=TUT[G.tutStep]; if(!s){ tutEnd(); return; }
+  if(s.enter) s.enter(G);
+  lectSay(s.t,'normal');
+  $('#lectNext').style.display=s.req?'none':'inline-block';
+  $('#lectSkip').style.display='inline-block';
+  $$('.act').forEach(a=>a.classList.remove('hl'));
+  if(s.hl&&s.hl!=='map') $('#'+s.hl)?.classList.add('hl');
+  syncUI();
+}
+function tutNotify(){ if(G.tut&&TUT[G.tutStep]?.req) setTimeout(tutCheck,120); }
+function tutCheck(){
+  if(!G.tut) return;
+  const s=TUT[G.tutStep];
+  if(s&&s.req&&s.req(G)){ G.tutStep++; setTimeout(tutShow,650); }
+}
+function tutEnd(){
+  G.tut=false; G.tutDone=true; G.power.on=true; G.day=START_DAY; G.hour=6;
+  $$('.act').forEach(a=>a.classList.remove('hl'));
+  $('#lectNext').style.display='none'; $('#lectSkip').style.display='none';
+  $('#lecturer').classList.add('dim');
+  lectSay("You're on shift. I'll speak up when something important happens — otherwise, run your scheme. Open the <b>Academy</b> any time from the menu.",'happy');
+  toast('ok','Training complete · +100 XP'); G.xp+=100; checkLevel(); save();
+}
+$('#lectNext').onclick=()=>{ if(!G.tut){ $('#lecturer').classList.add('dim'); return; } G.tutStep++; tutShow(); };
+$('#lectSkip').onclick=()=>{ tutEnd(); };
+
+/* ── academy ── */
+const LESSONS=[
+ {i:'🛢️',h:'Why we store water',b:[
+  "ZESCO load-shedding removes your pump for hours at a time, but demand does not stop. The tank is a <b>buffer between supply and demand</b>.",
+  "Size storage for the longest outage plus the morning peak. Too small and taps run dry; too large and water sits so long that chlorine decays and the water goes stale."],
+  f:'Storage ≥ (outage hours × average demand) + peak allowance',try:'aPump'},
+ {i:'⚙️',h:'The pump does real work',b:[
+  "A pump lifts flow Q against head H. Hydraulic power is ρ·g·Q·H; what you pay for is that divided by pump and motor efficiency.",
+  "With a variable-frequency drive, <b>flow ∝ speed, head ∝ speed², power ∝ speed³</b>. Slowing to 80% speed uses roughly half the power. Throttling a valve at full speed wastes it as heat."],
+  f:'P(kW) = 9.81 × Q(m³/s) × H(m) ÷ η     ·     Q∝N, H∝N², P∝N³',try:'aShop'},
+ {i:'💧',h:'Non-revenue water',b:[
+  "NRW is water you produced but never got paid for. It splits into <b>physical losses</b> (bursts, leaks, overflow) and <b>commercial losses</b> (meter under-registration, illegal connections, estimated bills).",
+  "Leak flow rises with pressure — that is the FAVAD relationship. Reducing night pressure with zone valves shrinks every existing leak at once."],
+  f:'NRW% = (produced − billed) ÷ produced × 100',try:'aFix'},
+ {i:'🧪',h:'Chlorine is a promise',b:[
+  "Disinfection is not a one-time act. You must still hold <b>0.2–0.5 mg/L free chlorine at the farthest tap</b>, hours after the water left the tank.",
+  "Residual decays with time and temperature. Long storage and long pipe runs eat it. When supply hours collapse and residual is low, households turn to shallow wells — and cholera follows."],
+  f:'CT = concentration × contact time   ·   target residual ≥ 0.2 mg/L',try:'aCl'},
+ {i:'📖',h:'Read, bill, collect',b:[
+  "Consumption = current reading − previous reading. Read in the window; estimated bills breed disputes and destroy trust.",
+  "<b>Collection efficiency</b> is what you actually recover. Customers who trust the bill and receive water pay it. Prepaid meters convert collection to nearly 100% because payment precedes supply."],
+  f:'Revenue = Σ(consumption × tariff) × collection efficiency',try:'aRead'},
+ {i:'⚖️',h:'Tariffs and cost recovery',b:[
+  "NWASCO approves tariffs once a year. The tariff must cover operation and maintenance — otherwise the scheme decays until it fails.",
+  "An <b>increasing block tariff</b> keeps a cheap lifeline block for basic needs and charges heavy users more. It is pro-poor and encourages conservation."],
+  f:'O&M cost coverage = operating revenue ÷ operating cost  (target > 1.0)',try:'aBill'},
+ {i:'🌍',h:'Drought and abstraction',b:[
+  "WARMA licenses your daily abstraction. In the dry season the water table falls, borehole yield drops, and over-pumping draws the level down further.",
+  "Exceeding your licence brings fines and eventually revocation. Sustainable yield is a physical limit, not a negotiating position."],
+  f:'Sustainable yield ≈ aquifer recharge rate',try:'aPump'}
+];
+const KPIS=[
+ ['Hours of supply','≥ 16 h/day','Dry taps push households to unsafe sources.'],
+ ['Non-revenue water','≤ 25%','Zambian utilities average 40–50%.'],
+ ['Collection efficiency','≥ 85%','Cash you actually recover from bills issued.'],
+ ['Metering ratio','100%','Unmetered connections cannot be billed fairly.'],
+ ['Water quality compliance','residual ≥ 0.2 mg/L','Measured at the farthest tap, not the tank.'],
+ ['WARMA compliance','within licence','Daily abstraction cap in m³.'],
+ ['O&M cost coverage','> 1.0','Revenue must cover operating cost.']
+];
+const WHO=[
+ ['NWASCO','National Water Supply and Sanitation Council. Licenses commercial utilities, approves tariffs annually, and publishes a national performance ranking of every utility.'],
+ ['WARMA','Water Resources Management Authority. Issues abstraction permits, sets daily volume limits, and can revoke your right to draw water.'],
+ ['ZESCO','The national power utility. Load-shedding schedules decide when your pump can run — the single biggest operational constraint in the dry season.'],
+ ['The customer','Households, clinics, schools and kiosk operators. They pay when they trust you, and they fetch from shallow wells when you fail them.']
+];
+function renderAcademy(tab){
+  const b=$('#academyBody'); b.innerHTML='';
+  if(tab==='lessons'){
+    LESSONS.forEach(L=>{
+      const d=document.createElement('div'); d.className='lesson';
+      d.innerHTML=`<h3><i>${L.i}</i>${L.h}</h3>`+L.b.map(p=>`<p>${p}</p>`).join('')+`<div class="formula">${L.f}</div>`;
+      const t=document.createElement('button'); t.className='trybtn'; t.textContent='▸ Show me on the scheme';
+      t.onclick=()=>{ closeAll(); const el=$('#'+L.try); if(el){ el.classList.add('hl'); setTimeout(()=>el.classList.remove('hl'),3200);} };
+      d.appendChild(t); b.appendChild(d);
+    });
+  } else if(tab==='kpi'){
+    KPIS.forEach(k=>{
+      const d=document.createElement('div'); d.className='lesson';
+      d.innerHTML=`<h3><i>📊</i>${k[0]}</h3><div class="formula">TARGET · ${k[1]}</div><p>${k[2]}</p>`;
+      b.appendChild(d);
+    });
+  } else {
+    WHO.forEach(w=>{
+      const d=document.createElement('div'); d.className='lesson';
+      d.innerHTML=`<h3><i>🏛️</i>${w[0]}</h3><p>${w[1]}</p>`; b.appendChild(d);
+    });
+  }
+}
+$$('[data-atab]').forEach(t=>t.onclick=()=>{ $$('[data-atab]').forEach(x=>x.classList.remove('on')); t.classList.add('on'); renderAcademy(t.dataset.atab); });
+
+/* ── audio ── */
+const audio={
+  ctx:null,master:null,pumpG:null,waterG:null,leakG:null,noise:null,
+  ensure(){ if(this.ctx)return; try{
+    const C=window.AudioContext||window.webkitAudioContext; if(!C)return;
+    const c=this.ctx=new C(); this.master=c.createGain(); this.master.gain.value=soundOn?.45:0; this.master.connect(c.destination);
+    const len=2*c.sampleRate, buf=c.createBuffer(1,len,c.sampleRate), d=buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i]=Math.random()*2-1; this.noise=buf;
+    const o=c.createOscillator(),o2=c.createOscillator(),f=c.createBiquadFilter(),g=c.createGain();
+    o.type='sawtooth';o.frequency.value=58;o2.type='square';o2.frequency.value=117;
+    f.type='lowpass';f.frequency.value=320;g.gain.value=0;
+    o.connect(f);o2.connect(f);f.connect(g);g.connect(this.master);o.start();o2.start();this.pumpG=g;
+    const mk=(type,freq,q)=>{const s=c.createBufferSource();s.buffer=buf;s.loop=true;const fl=c.createBiquadFilter();
+      fl.type=type;fl.frequency.value=freq;fl.Q.value=q;const gg=c.createGain();gg.gain.value=0;
+      s.connect(fl);fl.connect(gg);gg.connect(this.master);s.start();return gg;};
+    this.waterG=mk('lowpass',700,.7); this.leakG=mk('bandpass',2600,2.5);
+  }catch(e){} },
+  setOn(v){ soundOn=v; this.ensure(); if(this.master) this.master.gain.setTargetAtTime(v?.45:0,this.ctx.currentTime,.12);
+    if(v&&this.ctx.state==='suspended') this.ctx.resume(); },
+  update(g){ if(!this.ctx)return; const t=this.ctx.currentTime;
+    this.pumpG.gain.setTargetAtTime(g.pump.on&&SIM.pumpQ(g)>0?.11:0,t,.25);
+    this.waterG.gain.setTargetAtTime(g.tank.vol>.5?.035:0,t,.4);
+    this.leakG.gain.setTargetAtTime(g.leaks.length?.05*Math.min(g.leaks.length,3):0,t,.3); },
+  tone(f,dur,type,vol){ if(!this.ctx||!soundOn)return; try{ const c=this.ctx,t=c.currentTime,o=c.createOscillator(),g=c.createGain();
+    o.type=type||'sine';o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(vol||.12,t);
+    g.gain.exponentialRampToValueAtTime(.0005,t+dur);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+dur+.02);}catch(e){} },
+  click(){ this.tone(520,.07,'triangle',.09); },
+  err(){ this.tone(150,.18,'sawtooth',.1); },
+  blip(){ this.tone(880+Math.random()*220,.03,'sine',.03); },
+  chime(n){ [523,659,784].slice(0,n||1).forEach((f,i)=>setTimeout(()=>this.tone(f,.4,'sine',.1),i*110)); },
+  coin(){ [784,988,1319].forEach((f,i)=>setTimeout(()=>this.tone(f,.28,'triangle',.09),i*70)); },
+  alarm(){ this.tone(320,.14,'square',.11); setTimeout(()=>this.tone(240,.2,'square',.11),150); },
+  clunk(){ if(!this.ctx||!soundOn)return; try{ const c=this.ctx,t=c.currentTime,s=c.createBufferSource();
+    s.buffer=this.noise;s.playbackRate.value=.3;const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=200;
+    const g=c.createGain();g.gain.setValueAtTime(.4,t);g.gain.exponentialRampToValueAtTime(.001,t+.18);
+    s.connect(f);f.connect(g);g.connect(this.master);s.start(t);s.stop(t+.2);}catch(e){} },
+  pumpStart(){ this.tone(180,.3,'sawtooth',.08); }, pumpStop(){ this.tone(120,.25,'sawtooth',.07); }
+};
+
+/* ── particles ── */
+function P(x,y,vx,vy,life,color,size,type){ particles.push({x,y,vx,vy,life,max:life,color,size,type:type||'dot'}); }
+function splash(x,y){ for(let i=0;i<22;i++) P(x,y,rnd(-90,90),rnd(-150,-30),rnd(.4,.9),'#7ef0ff',rnd(2,5)); }
+function puff(x,y){ for(let i=0;i<16;i++) P(x,y,rnd(-40,40),rnd(-70,-20),rnd(.5,1),'#a7f3d0',rnd(3,7)); }
+function spark(){ for(let i=0;i<20;i++) P(270,150,rnd(-120,120),rnd(-120,40),rnd(.2,.5),'#facc15',rnd(2,4)); }
+function confetti(){ for(let i=0;i<40;i++) P(rnd(200,800),rnd(80,200),rnd(-70,70),rnd(-40,90),rnd(.8,1.6),['#fbbf24','#22d3ee','#f97316','#4ade80'][i%4],rnd(3,6),'sq'); }
+function coinBurst(){ for(let i=0;i<26;i++) P(rnd(300,700),rnd(300,500),rnd(-60,60),rnd(-220,-120),rnd(.7,1.3),'#fbbf24',rnd(4,7),'coin'); }
+function shake(m){ shakeT=Math.max(shakeT,m); $('#stage').classList.add('shake'); setTimeout(()=>$('#stage').classList.remove('shake'),430); }
+function updateParticles(dt){
+  for(let i=particles.length-1;i>=0;i--){ const p=particles[i];
+    p.life-=dt; if(p.life<=0){ particles.splice(i,1); continue; }
+    p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=340*dt; p.vx*=.99; }
+  if(particles.length>420) particles.splice(0,particles.length-420);
+}
+
+/* ── canvas ── */
+const cv=$('#map'), cx=cv.getContext('2d');
+let scale=1, offX=0, offY=0;
+function resize(){
+  const r=$('#stage').getBoundingClientRect(), d=Math.min(devicePixelRatio||1,2);
+  cv.width=Math.max(2,r.width*d); cv.height=Math.max(2,r.height*d);
+  cx.setTransform(d,0,0,d,0,0);
+  scale=Math.min(r.width/VW,r.height/VH); offX=(r.width-VW*scale)/2; offY=(r.height-VH*scale)/2;
+}
+new ResizeObserver(resize).observe($('#stage'));
+const VX=x=>offX+x*scale, VY=y=>offY+y*scale, S=v=>v*scale;
+
+function drawMap(g,t){
+  const r=$('#stage').getBoundingClientRect();
+  cx.clearRect(0,0,r.width,r.height);
+  cx.save(); cx.translate(offX,offY); cx.scale(scale,scale);
+  /* ground */
+  const gg=cx.createLinearGradient(0,0,0,VH);
+  gg.addColorStop(0,'#16303f'); gg.addColorStop(.35,'#1d3a2c'); gg.addColorStop(1,'#2a2418');
+  cx.fillStyle=gg; cx.fillRect(0,0,VW,VH);
+  cx.fillStyle='rgba(180,83,9,.10)';
+  for(let i=0;i<70;i++){ const x=(i*137)%VW,y=(i*211)%VH; cx.fillRect(x,y,26,10); }
+  /* plots */
+  HOUSE_POS.forEach(p=>{ cx.fillStyle='rgba(34,197,94,.10)'; cx.fillRect(p.x-62,p.y-58,124,116);
+    cx.strokeStyle='rgba(34,197,94,.22)'; cx.lineWidth=2; cx.strokeRect(p.x-62,p.y-58,124,116); });
+  /* roads */
+  [300,490].forEach(y=>{ cx.fillStyle='#3b4550'; cx.fillRect(0,y-22,VW,44);
+    cx.strokeStyle='#facc15'; cx.lineWidth=3; cx.setLineDash([26,22]); cx.beginPath(); cx.moveTo(0,y); cx.lineTo(VW,y); cx.stroke(); cx.setLineDash([]); });
+  cx.fillStyle='#3b4550'; cx.fillRect(408,278,44,236);
+  /* mains */
+  const flow=g.tank.vol>.4;
+  const main=(x1,y1,x2,y2,w,col)=>{
+    cx.strokeStyle='#1f2937'; cx.lineWidth=w+5; cx.lineCap='round';
+    cx.beginPath();cx.moveTo(x1,y1);cx.lineTo(x2,y2);cx.stroke();
+    cx.strokeStyle=col; cx.lineWidth=w; cx.beginPath();cx.moveTo(x1,y1);cx.lineTo(x2,y2);cx.stroke();
+    if(flow){ cx.strokeStyle='rgba(126,240,255,.85)'; cx.lineWidth=w*.42; cx.setLineDash([14,20]);
+      cx.lineDashOffset=-(t*70)%34; cx.beginPath();cx.moveTo(x1,y1);cx.lineTo(x2,y2);cx.stroke(); cx.setLineDash([]); }
+  };
+  main(150,150,400,150,11,'#0e7490');
+  main(430,196,430,320,13,'#16a34a');
+  main(80,320,920,320,13,'#16a34a');
+  main(430,320,430,510,11,'#16a34a');
+  main(80,510,920,510,11,'#16a34a');
+  /* service lines */
+  g.houses.forEach(h=>{ if(!h.conn){ cx.strokeStyle='rgba(249,115,22,.5)';cx.lineWidth=4;cx.setLineDash([7,7]);
+      cx.beginPath();cx.moveTo(h.x,h.y>450?510:320);cx.lineTo(h.x,h.y-42);cx.stroke();cx.setLineDash([]); return; }
+    const my=h.y>450?510:320;
+    cx.strokeStyle='#0b3b4a';cx.lineWidth=8;cx.beginPath();cx.moveTo(h.x,my);cx.lineTo(h.x,h.y-42);cx.stroke();
+    cx.strokeStyle=flow?'#22d3ee':'#334155';cx.lineWidth=5;cx.beginPath();cx.moveTo(h.x,my);cx.lineTo(h.x,h.y-42);cx.stroke();
+    if(flow){cx.strokeStyle='rgba(255,255,255,.8)';cx.lineWidth=2;cx.setLineDash([8,14]);cx.lineDashOffset=-(t*55)%22;
+      cx.beginPath();cx.moveTo(h.x,my);cx.lineTo(h.x,h.y-42);cx.stroke();cx.setLineDash([]);}
+    cx.fillStyle='#0f172a';cx.fillRect(h.x-9,h.y-52,18,13);
+    cx.fillStyle=h.read?'#4ade80':'#94a3b8';cx.fillRect(h.x-6,h.y-49,12,7);
+  });
+  drawPylon(g,t); drawBorehole(g,t); drawPump(g,t); drawTank(g,t);
+  g.houses.forEach(h=>drawHouse(h,g,t));
+  /* leaks */
+  g.leaks.forEach((l,i)=>{
+    const pu=.5+.5*Math.sin(t*6+i);
+    cx.fillStyle=`rgba(239,68,68,${.18+pu*.22})`; cx.beginPath(); cx.arc(l.x,l.y,34+pu*10,0,7); cx.fill();
+    cx.strokeStyle='#ef4444'; cx.lineWidth=3.5; cx.beginPath(); cx.arc(l.x,l.y,20,0,7); cx.stroke();
+    cx.fillStyle='#fca5a5'; cx.font='bold 20px Outfit,sans-serif'; cx.textAlign='center'; cx.fillText('!',l.x,l.y+7);
+    if(Math.random()<.5) P(l.x,l.y,rnd(-60,60),rnd(-160,-60),rnd(.3,.7),'#7ef0ff',rnd(2,4));
+  });
+  /* particles */
+  particles.forEach(p=>{ const a=clamp(p.life/p.max,0,1);
+    cx.globalAlpha=a; cx.fillStyle=p.color;
+    if(p.type==='coin'){ cx.beginPath();cx.ellipse(p.x,p.y,p.size,p.size*.7,0,0,7);cx.fill();
+      cx.fillStyle='#78350f';cx.font=`bold ${p.size}px JetBrains Mono`;cx.textAlign='center';cx.fillText('K',p.x,p.y+p.size*.35); }
+    else if(p.type==='sq'){ cx.fillRect(p.x,p.y,p.size,p.size); }
+    else { cx.beginPath();cx.arc(p.x,p.y,p.size,0,7);cx.fill(); }
+    cx.globalAlpha=1; });
+  /* labels */
+  cx.font='600 13px JetBrains Mono, monospace'; cx.textAlign='center'; cx.fillStyle='rgba(157,180,204,.85)';
+  cx.fillText('BOREHOLE',150,232); cx.fillText('PUMP HOUSE',270,232); cx.fillText('ELEVATED TANK',430,232);
+  cx.fillStyle='rgba(157,180,204,.5)'; cx.font='600 12px JetBrains Mono, monospace';
+  cx.fillText('DISTRIBUTION NETWORK · SCHEME ONE',500,676);
+  /* night tint */
+  const hr=g.hour, night=hr<5.5||hr>19? .46 : hr<7? .28 : hr>17.5? .26 : 0;
+  if(night>0){ cx.fillStyle=`rgba(8,16,38,${night})`; cx.fillRect(0,0,VW,VH); }
+  cx.restore();
+}
+function drawPylon(g,t){
+  const on=g.power.on;
+  cx.strokeStyle=on?'#64748b':'#334155'; cx.lineWidth=4;
+  cx.beginPath();cx.moveTo(52,60);cx.lineTo(38,200);cx.moveTo(52,60);cx.lineTo(66,200);
+  cx.moveTo(40,110);cx.lineTo(64,110);cx.moveTo(42,150);cx.lineTo(62,150);cx.stroke();
+  cx.strokeStyle=on?'#facc15':'#475569'; cx.lineWidth=3;
+  cx.beginPath();cx.moveTo(52,72);cx.quadraticCurveTo(160,100,270,116);cx.stroke();
+  if(on){ cx.fillStyle=`rgba(250,204,21,${.5+.4*Math.sin(t*4)})`; cx.beginPath();cx.arc(52,66,7,0,7);cx.fill(); }
+  cx.fillStyle=on?'#facc15':'#ef4444'; cx.font='bold 12px JetBrains Mono'; cx.textAlign='center';
+  cx.fillText(on?'ZESCO ON':'SHEDDING',52,222);
+}
+function drawBorehole(g,t){
+  cx.fillStyle='#475569'; cx.fillRect(108,168,84,26);
+  cx.fillStyle='#64748b'; cx.fillRect(134,110,32,62);
+  cx.fillStyle='#1e293b'; cx.fillRect(142,118,16,54);
+  const lvl=g.aquifer.vol/g.aquifer.cap;
+  cx.fillStyle='#0e7490'; cx.fillRect(142,118+54*(1-lvl),16,54*lvl);
+  cx.fillStyle='#94a3b8'; cx.fillRect(128,102,44,10);
+  cx.fillStyle='#22d3ee'; cx.font='bold 11px JetBrains Mono'; cx.textAlign='center';
+  cx.fillText(Math.round(g.aquifer.vol)+'m³',150,96);
+}
+function drawPump(g,t){
+  const on=g.pump.on&&SIM.pumpQ(g)>0;
+  cx.fillStyle='#334155'; cx.fillRect(214,168,112,26);
+  cx.fillStyle='#475569'; cx.fillRect(228,96,32,52);
+  for(let i=0;i<5;i++){ cx.fillStyle='#64748b'; cx.fillRect(230+i*6,98,3,48); }
+  cx.fillStyle='#1e293b'; cx.beginPath(); cx.arc(280,150,40,0,7); cx.fill();
+  cx.strokeStyle=on?'#22d3ee':'#64748b'; cx.lineWidth=6; cx.beginPath(); cx.arc(280,150,36,0,7); cx.stroke();
+  cx.save(); cx.translate(280,150); cx.rotate(on?t*7:0);
+  cx.strokeStyle=on?'#7ef0ff':'#475569'; cx.lineWidth=4;
+  for(let i=0;i<7;i++){ cx.rotate(Math.PI*2/7); cx.beginPath(); cx.moveTo(0,0); cx.quadraticCurveTo(16,-6,28,4); cx.stroke(); }
+  cx.restore();
+  cx.fillStyle='#0f172a'; cx.beginPath();cx.arc(280,150,7,0,7);cx.fill();
+  if(on){ cx.fillStyle=`rgba(34,211,238,${.14+.1*Math.sin(t*8)})`; cx.beginPath();cx.arc(280,150,52,0,7);cx.fill(); }
+  cx.fillStyle=on?'#4ade80':'#64748b'; cx.font='bold 11px JetBrains Mono'; cx.textAlign='center';
+  cx.fillText(on?SIM.pumpKW(g).toFixed(1)+' kW':'STOPPED',280,92);
+}
+function drawTank(g,t){
+  const x=430,y=100,w=96,h=86, pct=g.tank.vol/g.tank.cap;
+  cx.strokeStyle='#475569'; cx.lineWidth=7;
+  [[-34,0],[34,0],[-20,0],[20,0]].forEach(l=>{ cx.beginPath();cx.moveTo(x+l[0],y+h);cx.lineTo(x+l[0]*1.35,y+h+66);cx.stroke(); });
+  cx.strokeStyle='#334155';cx.lineWidth=3;
+  cx.beginPath();cx.moveTo(x-44,y+h+34);cx.lineTo(x+44,y+h+34);cx.stroke();
+  cx.fillStyle='#1e293b'; cx.fillRect(x-w/2,y,w,h);
+  const wh=h*pct;
+  const wg=cx.createLinearGradient(0,y+h-wh,0,y+h);
+  wg.addColorStop(0,'#7ef0ff'); wg.addColorStop(1,'#0e7490');
+  cx.fillStyle=wg; cx.fillRect(x-w/2+4,y+h-wh-2,w-8,wh);
+  cx.strokeStyle='rgba(255,255,255,.5)';cx.lineWidth=2;
+  cx.beginPath();
+  for(let i=0;i<=16;i++){ const px=x-w/2+4+(w-8)*i/16, py=y+h-wh-2+Math.sin(i*.8+t*3)*2;
+    i===0?cx.moveTo(px,py):cx.lineTo(px,py); } cx.stroke();
+  cx.strokeStyle='#94a3b8'; cx.lineWidth=4; cx.strokeRect(x-w/2,y,w,h);
+  cx.fillStyle='#64748b'; cx.fillRect(x-w/2-6,y-10,w+12,12);
+  cx.fillStyle=pct<.15?'#ef4444':pct<.35?'#fbbf24':'#7ef0ff';
+  cx.font='bold 15px JetBrains Mono'; cx.textAlign='center';
+  cx.fillText(Math.round(pct*100)+'%',x,y+h/2+6);
+  cx.fillStyle='#94a3b8'; cx.font='10px JetBrains Mono';
+  cx.fillText(Math.round(g.tank.vol)+'/'+g.tank.cap+' m³',x,y+h+18);
+}
+function drawHouse(h,g,t){
+  const x=h.x,y=h.y, served=g.tank.vol>.4&&h.conn;
+  cx.fillStyle='rgba(20,40,26,.85)'; cx.fillRect(x-52,y-46,104,92);
+  cx.strokeStyle='rgba(34,197,94,.35)'; cx.lineWidth=2; cx.strokeRect(x-52,y-46,104,92);
+  /* trees */
+  [[-40,-32],[40,-30],[-42,32]].forEach((p,i)=>{ cx.fillStyle='#166534'; cx.beginPath();cx.arc(x+p[0],y+p[1],9,0,7);cx.fill();
+    cx.fillStyle='#22c55e'; cx.beginPath();cx.arc(x+p[0]-2,y+p[1]-2,6,0,7);cx.fill(); });
+  /* roof */
+  const roof=h.type==='clinic'?'#e2e8f0':h.type==='school'?'#cbd5e1':h.type==='kiosk'?'#f59e0b':'#c2410c';
+  cx.fillStyle=roof;
+  cx.beginPath(); cx.moveTo(x-34,y-26); cx.lineTo(x+34,y-26); cx.lineTo(x+22,y+2); cx.lineTo(x-22,y+2); cx.closePath(); cx.fill();
+  cx.fillStyle='rgba(0,0,0,.22)';
+  cx.beginPath(); cx.moveTo(x-34,y-26); cx.lineTo(x,y-12); cx.lineTo(x-22,y+2); cx.closePath(); cx.fill();
+  cx.fillStyle=roof; cx.globalAlpha=.85;
+  cx.beginPath(); cx.moveTo(x-22,y+2); cx.lineTo(x+22,y+2); cx.lineTo(x+16,y+24); cx.lineTo(x-16,y+24); cx.closePath(); cx.fill();
+  cx.globalAlpha=1;
+  cx.strokeStyle='rgba(0,0,0,.3)'; cx.lineWidth=1.5;
+  cx.beginPath();cx.moveTo(x-34,y-26);cx.lineTo(x+34,y-26);cx.lineTo(x+22,y+2);cx.lineTo(x-22,y+2);cx.closePath();cx.stroke();
+  /* window light */
+  if(served){ const glow=.55+.35*Math.sin(t*2+h.seed*9);
+    cx.fillStyle=`rgba(251,191,36,${glow})`; cx.fillRect(x-7,y+8,14,10);
+    cx.fillStyle=`rgba(251,191,36,${glow*.25})`; cx.beginPath();cx.arc(x,y+13,20,0,7);cx.fill(); }
+  /* status ring */
+  const col=!h.conn?'#f97316':served?'#22d3ee':'#ef4444';
+  cx.strokeStyle=col; cx.lineWidth=3; cx.strokeRect(x-52,y-46,104,92);
+  if(!served&&h.conn){ cx.fillStyle=`rgba(239,68,68,${.3+.3*Math.sin(t*5)})`; cx.fillRect(x-52,y-46,104,92); }
+  /* badge */
+  const badge=h.type==='clinic'?'✚':h.type==='school'?'🎓':h.type==='kiosk'?'🏪':'#'+h.id;
+  cx.fillStyle='rgba(7,13,21,.9)'; cx.fillRect(x-20,y+30,40,16);
+  cx.fillStyle=col; cx.font='bold 11px JetBrains Mono'; cx.textAlign='center'; cx.fillText(badge,x,y+42);
+  if(h.read){ cx.fillStyle='#4ade80'; cx.font='bold 16px Outfit'; cx.fillText('✓',x+40,y-30); }
+}
+
+/* ── pointer ── */
+cv.addEventListener('pointerdown',e=>{
+  if(!G||paused) return;
+  const r=cv.getBoundingClientRect();
+  const x=(e.clientX-r.left-offX)/scale, y=(e.clientY-r.top-offY)/scale;
+  for(let i=0;i<G.leaks.length;i++){ const l=G.leaks[i];
+    if(Math.hypot(x-l.x,y-l.y)<58){ fixLeak(i); return; } }
+  for(const h of G.houses){ if(Math.abs(x-h.x)<54&&Math.abs(y-h.y)<48){
+    toast('info',`Connection #${h.id} · ${h.type} · used ${h.used.toFixed(1)} m³ · satisfaction ${Math.round(h.sat*100)}%`); return; } }
+});
+
+/* ── UI sync ── */
+function syncUI(){
+  if(!G) return; const g=G;
+  $('#sFunds').querySelector('b').textContent=K(g.funds);
+  const hh=String(Math.floor(g.hour)).padStart(2,'0'), mm=String(Math.floor((g.hour%1)*60)).padStart(2,'0');
+  $('#sDay').querySelector('b').textContent=`D${g.day} ${hh}:${mm}`;
+  $('#sTank').querySelector('b').textContent=Math.round(g.tank.vol/g.tank.cap*100)+'%';
+  $('#powerChip').classList.toggle('off',!g.power.on);
+  $('#powerTxt').textContent=g.power.on?'GRID ON':(g.up.solar?'SOLAR ONLY':'SHEDDING');
+  $('#kSupply').textContent=g.supplyH.toFixed(1)+'h';
+  const nrw=g.produced>0?clamp((g.produced-g.billedVol)/g.produced*100,0,100):0;
+  $('#kNrw').textContent=Math.round(nrw)+'%';
+  $('#kNrw').style.color=nrw>35?'#fca5a5':nrw>25?'#fbbf24':'#4ade80';
+  $('#kCl').textContent=g.chlorine.toFixed(2);
+  $('#kCl').style.color=g.chlorine<.2?'#fca5a5':'#7ef0ff';
+  $('#kAbs').textContent=Math.round(g.absToday);
+  $('#kAbs').style.color=g.absToday>WARMA_CAP?'#fca5a5':'#9db4cc';
+  $('#wSeason').textContent=g.hot?'🔥 HOT DAY':'DRY SEASON';
+  $('#wHint').textContent=g.choleraRisk>40?`⚠ cholera risk ${Math.round(g.choleraRisk)}%`:'Kariba low · shedding likely';
+  /* buttons */
+  const pump=$('#aPump');
+  pump.classList.toggle('on',g.pump.on);
+  pump.disabled=!g.power.on&&!g.up.solar;
+  $('#pumpSub').textContent=g.pump.on?SIM.pumpKW(g).toFixed(1)+' kW':(!g.power.on&&!g.up.solar?'no power':'5.5 kW');
+  const fix=$('#aFix');
+  fix.classList.toggle('hot',g.leaks.length>0);
+  fix.disabled=g.crew.busy>0;
+  $('#fixSub').textContent=g.crew.busy>0?'crew working…':g.leaks.length?`${g.leaks.length} burst · ${K(REPAIR_COST)}`:'no leaks';
+  let badge=fix.querySelector('.badge');
+  if(g.leaks.length){ if(!badge){badge=document.createElement('span');badge.className='badge';fix.appendChild(badge);} badge.textContent=g.leaks.length; }
+  else if(badge) badge.remove();
+  $('#aCl').classList.toggle('ready',g.chlorine<.22);
+  const inWin=g.day>=READ_A&&g.day<=READ_B;
+  $('#aRead').classList.toggle('ready',inWin&&!g.readDone&&!g.up.prepaid);
+  $('#aRead').disabled=g.up.prepaid||g.reading||(!inWin&&!g.tut);
+  $('#readSub').textContent=g.up.prepaid?'automatic':g.reading?Math.round(g.readProg*100)+'%':g.readDone?'read ✓':inWin?'WINDOW OPEN':'window 25–28';
+  $('#aBill').classList.toggle('ready',g.readDone&&!g.billed);
+  $('#aBill').disabled=!g.readDone||g.billed||g.up.prepaid;
+  $('#billSub').textContent=g.up.prepaid?'prepaid':g.billed?'issued ✓':g.readDone?'ready to issue':'not read';
+  $('#shopSub').textContent=SHOP.filter(s=>!g.up[s.k]&&g.level>=s.lvl&&g.funds>=s.cost).length+' affordable';
+  /* objective */
+  let icon='🎯',txt='',sub='';
+  if(g.tut){ icon='🎓'; txt='Training with Eng. Chanda Mwila'; sub='Follow the highlighted control'; }
+  else if(g.leaks.length){ icon='🚨'; txt=`Fix ${g.leaks.length} burst${g.leaks.length>1?'s':''} on the main`; sub='Every hour lost is non-revenue water'; }
+  else if(g.tank.vol/g.tank.cap<.2){ icon='⚠️'; txt='Tank critically low — pump now'; sub=g.power.on?'Grid is available':'No grid power — wait or use solar'; }
+  else if(inWin&&!g.readDone&&!g.up.prepaid){ icon='📖'; txt='Meter reading window is OPEN'; sub=`Days ${READ_A}–${READ_B} · tap READ`; }
+  else if(g.readDone&&!g.billed){ icon='💰'; txt='Issue the bills and collect'; sub='Revenue is waiting'; }
+  else if(g.chlorine<.22){ icon='🧪'; txt='Chlorine residual low — dose the tank'; sub='Target 0.2–0.5 mg/L at the tap'; }
+  else { icon='🎯'; txt=`Run the scheme until NWASCO inspection · day ${g.nextInspect}`; sub=`Keep supply ≥16h · NRW ≤25% · tank above zero`; }
+  $('#objIcon').textContent=icon; $('#objText').innerHTML=txt+'<small>'+sub+'</small>';
+  $('#shopFunds').textContent=K(g.funds);
+}
+
+/* ── report ── */
+function scores(){
+  const g=G, days=Math.max(1,g.days);
+  const avgSupply=g.supplyTotal>0?(g.supplyTotalAvg||16):16;
+  const supplyScore=clamp((g.avgSupply??16)/16,0,1)*30;
+  const nrw=g.produced>0?clamp((g.produced-g.billedVol)/g.produced,0,1):0;
+  const nrwScore=clamp((0.5-nrw)/0.25,0,1)*25;
+  const coll=g.lastCollection??DIFF[g.diff].collect;
+  const collScore=clamp(coll/0.85,0,1)*20;
+  const qualScore=clamp(1-g.clLowH/Math.max(1,g.supplyTotal)*3,0,1)*15;
+  const warmaScore=clamp(1-g.warmaWarn*.4,0,1)*10;
+  return {supplyScore,nrwScore,collScore,qualScore,warmaScore,nrw,coll,
+    total:Math.round(supplyScore+nrwScore+collScore+qualScore+warmaScore)};
+}
+function showReport(){
+  paused=true;
+  const g=G,s=scores();
+  g.avgSupply=g.supplyTotal/Math.max(1,g.days*24)*24;
+  const sc=scores(); const total=sc.total;
+  const grade=total>=85?'A':total>=70?'B':total>=55?'C':'D';
+  const gcol=grade==='A'?'#4ade80':grade==='B'?'#22d3ee':grade==='C'?'#fbbf24':'#ef4444';
+  const pass=total>=55;
+  const rows=[
+    ['Hours of supply',sc.supplyScore,30,'#22d3ee',`${(g.supplyTotal/Math.max(1,g.days)).toFixed(1)} h/day average · target 16`],
+    ['Non-revenue water',sc.nrwScore,25,'#f97316',`${Math.round(sc.nrw*100)}% losses · target ≤25%`],
+    ['Collection efficiency',sc.collScore,20,'#fbbf24',`${Math.round(sc.coll*100)}% recovered · target ≥85%`],
+    ['Water quality',sc.qualScore,15,'#4ade80',`residual below 0.2 for ${g.clLowH.toFixed(0)} h`],
+    ['WARMA compliance',sc.warmaScore,10,'#a855f7',`${g.warmaWarn} licence breach(es) · ${K(g.warmaFine)} fines`]
+  ];
+  const rivals=[['Nkana Water',78],['Kafubu Water',71],['Lusaka WSS',66],['Mulonga Water',59],['Chambeshi Water',52]];
+  const league=[...rivals.map(r=>({n:r[0],s:r[1],me:false})),{n:'SCHEME ONE (you)',s:total,me:true}].sort((a,b)=>b.s-a.s);
+  $('#reportCard').innerHTML=`
+    <div class="rhead">
+      <div class="seal">NWASCO · NATIONAL WATER SUPPLY & SANITATION COUNCIL</div>
+      <h2>Annual Performance Inspection</h2>
+      <div class="grade" style="color:${gcol}">${grade}</div>
+      <p><b style="color:${gcol}">${total}/100</b> — ${pass?'Scheme licence renewed.':'Performance below standard. Statutory management advised.'}</p>
+    </div>
+    ${rows.map(r=>`<div class="scorebar"><div class="sb-top"><span>${r[0]}</span><b style="color:${r[3]}">${Math.round(r[1])}/${r[2]}</b></div>
+      <div class="sb-track"><div class="sb-fill" style="width:${r[1]/r[2]*100}%;background:linear-gradient(90deg,${r[3]},${r[3]}88)"></div></div>
+      <div class="sb-note">${r[4]}</div></div>`).join('')}
+    <div class="league">${league.map((l,i)=>`<div class="lrow${l.me?' me':''}"><span class="pos">${i+1}</span><span>${l.n}</span><span class="sc">${l.s}</span></div>`).join('')}</div>
+    <p style="font-size:12px;color:var(--dim);line-height:1.7">Funds remaining <b style="color:var(--gold)">${K(g.funds)}</b> · ${g.days} days operated · Level ${g.level} · ${g.xp} XP<br>
+    ${g.outbreak?'An outbreak occurred during this period. ':''}${g.warmaWarn?'WARMA breaches recorded. ':''}${total>=85?'Outstanding — this scheme is a national benchmark.':''}</p>
+    <div class="rbtns">
+      <button class="bigbtn" id="rContinue">${pass?'▶ CONTINUE':'▶ KEEP OPERATING'}</button>
+      <button class="ghost" id="rRestart">⟲ NEW SCHEME</button>
+    </div>`;
+  $('#report').classList.add('open');
+  if(pass){ G.xp+=200; checkLevel(); audio.chime(3); confetti(); } else audio.alarm();
+  $('#rContinue').onclick=()=>{ $('#report').classList.remove('open'); paused=false;
+    G.nextInspect=G.day+15; G.billed=false; G.readDone=false; G.endless=true; G.warmaWarn=0; G.warmaFine=0;
+    toast('info',`Next inspection: day ${G.nextInspect}. Keep growing.`); save(); };
+  $('#rRestart').onclick=()=>{ $('#report').classList.remove('open'); toTitle(); };
+  save();
+}
+function showFail(){
+  paused=true;
+  $('#reportCard').innerHTML=`
+    <div class="rhead"><div class="seal">NWASCO · ENFORCEMENT NOTICE</div>
+      <h2 style="color:var(--danger2)">Statutory Management</h2>
+      <div class="grade" style="color:var(--danger)">✕</div>
+      <p>The scheme has run out of operating cash. NWASCO has appointed a statutory manager.<br><br>
+      <b>This is not the end of your training.</b> Every operator learns cash flow the hard way: revenue arrives in a monthly lump, but power and repairs are daily. Keep a reserve.</p></div>
+    <div class="rbtns"><button class="bigbtn" id="fRestart">⟲ TRY AGAIN</button>
+      <button class="ghost" id="fAcademy">🎓 Study the Academy</button></div>`;
+  $('#report').classList.add('open'); audio.alarm();
+  $('#fRestart').onclick=()=>{ $('#report').classList.remove('open'); newGame(G.diff,false); };
+  $('#fAcademy').onclick=()=>{ $('#report').classList.remove('open'); open_('academy'); };
+}
+
+/* ── toasts / drawers / save ── */
+function toast(kind,msg){
+  const ic={ok:'✓',warn:'⚠',bad:'✕',info:'ℹ',reg:'⚖'};
+  const el=document.createElement('div'); el.className='toast '+kind;
+  el.innerHTML=`<b>${ic[kind]||'ℹ'}</b><span></span>`; el.lastChild.textContent=msg;
+  $('#toasts').appendChild(el);
+  setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(),320); },4200);
+  while($('#toasts').children.length>4) $('#toasts').firstChild.remove();
+  if(BRIDGE&&kind==='bad') BRIDGE.vibrate(30);
+}
+function open_(id){ $('#'+id).classList.add('open'); if(id==='shop') buildShop(); if(id==='menu') menuStats(); }
+function closeAll(){ $$('.drawer').forEach(d=>d.classList.remove('open')); }
+$$('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).classList.remove('open'));
+$$('.drawer').forEach(d=>d.addEventListener('click',e=>{ if(e.target===d) d.classList.remove('open'); }));
+function menuStats(){
+  const g=G; if(!g)return;
+  $('#menuStats').innerHTML=`DIFFICULTY · ${DIFF[g.diff].name}<br>DAY ${g.day} · LEVEL ${g.level} · ${g.xp} XP<br>
+  FUNDS ${K(g.funds)}<br>PRODUCED ${Math.round(g.produced)} m³ · COLLECTED ${K(g.collected)}<br>
+  UPGRADES ${Object.values(g.up).filter(Boolean).length}/6 · SUPPLY ${(g.supplyTotal/Math.max(1,g.days)).toFixed(1)} h/day`;
+}
+function save(){ try{ localStorage.setItem('watersims_v1',JSON.stringify(G)); }catch(e){} }
+function load(){ try{ const s=localStorage.getItem('watersims_v1'); return s?JSON.parse(s):null; }catch(e){ return null; } }
+function toTitle(){
+  running=false; paused=false; closeAll(); $('#report').classList.remove('open');
+  $('#game').classList.add('hide'); $('#title').classList.remove('hide','gone');
+  if(load()) $('#btnContinue').classList.remove('hide');
+}
+
+/* ── wiring ── */
+let diffSel=0;
+$$('.diff').forEach(b=>b.onclick=()=>{ $$('.diff').forEach(x=>x.classList.remove('on')); b.classList.add('on'); diffSel=+b.dataset.d; audio.click(); });
+$('#btnStart').onclick=()=>{ audio.ensure(); newGame(diffSel,true); };
+$('#btnSkipTut').onclick=()=>{ audio.ensure(); newGame(diffSel,false); };
+$('#btnContinue').onclick=()=>{ const s=load(); if(!s)return; audio.ensure(); G=s; running=true; paused=false;
+  $('#title').classList.add('gone'); setTimeout(()=>$('#title').classList.add('hide'),500); $('#game').classList.remove('hide');
+  buildShop(); resize(); G.tut=false; $('#lectNext').style.display='none'; $('#lectSkip').style.display='none';
+  lectSay("Welcome back. Your scheme was saved. Pick up where you left off.",'happy'); syncUI(); toast('ok','Scheme restored.'); };
+$('#btnAcademyTitle').onclick=()=>{ renderAcademy('lessons'); open_('academy'); };
+$('#aPump').onclick=togglePump;
+$('#aFix').onclick=()=>fixLeak(null);
+$('#aCl').onclick=dose;
+$('#aRead').onclick=startRead;
+$('#aBill').onclick=issueBills;
+$('#aShop').onclick=()=>open_('shop');
+$('#btnPause').onclick=()=>{ paused=!paused; $('#pauseVeil').style.display=paused?'grid':'none'; $('#btnPause').textContent=paused?'▶':'⏸'; audio.click(); };
+$('#btnSpeed').onclick=()=>{ speed=speed===1?2:speed===2?4:1; $('#btnSpeed').textContent=speed+'×'; audio.click(); };
+$('#btnSound').onclick=()=>{ audio.setOn(!soundOn); $('#btnSound').textContent=soundOn?'🔊':'🔇'; $('#btnSound').setAttribute('aria-pressed',String(soundOn)); };
+$('#btnMenu').onclick=()=>open_('menu');
+$('#mAcademy').onclick=()=>{ closeAll(); renderAcademy('lessons'); open_('academy'); };
+$('#mSave').onclick=()=>{ save(); toast('ok','Scheme saved.'); closeAll(); };
+$('#mRestart').onclick=()=>{ closeAll(); newGame(G.diff,false); };
+$('#mTitle').onclick=()=>{ save(); toTitle(); };
+window.addEventListener('pointerdown',function once(){ audio.ensure(); window.removeEventListener('pointerdown',once); },{once:true});
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space'){ e.preventDefault(); $('#btnPause').click(); }
+  if(e.code==='KeyP') togglePump(); if(e.code==='KeyF') fixLeak(null);
+  if(e.code==='KeyC') dose(); if(e.code==='KeyR') startRead(); if(e.code==='KeyB') issueBills();
+  if(e.code==='Escape') closeAll();
+});
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ save(); audio.ctx&&audio.ctx.suspend(); } else { lastNow=performance.now(); audio.ctx&&soundOn&&audio.ctx.resume(); } });
+window.__onAndroidBack=()=>{ if($('.drawer.open')){ closeAll(); return true; } if($('#report').classList.contains('open')) return true; return false; };
+
+/* ── loop ── */
+let uiAcc=0,auAcc=0;
+function loop(now){
+  requestAnimationFrame(loop);
+  const dt=Math.min(.05,(now-lastNow)/1000||0); lastNow=now; tReal+=dt;
+  if(!running||!G){ return; }
+  if(!paused){
+    const h=dt*(G.tut?.35:.5*speed);
+    advance(h);
+    if(G.tut) tutCheck();
+  }
+  updateParticles(dt);
+  drawMap(G,tReal);
+  uiAcc+=dt; if(uiAcc>.15){ uiAcc=0; syncUI(); }
+  auAcc+=dt; if(auAcc>.12){ auAcc=0; audio.update(G); }
+}
+if(load()) $('#btnContinue').classList.remove('hide');
+renderAcademy('lessons'); resize(); requestAnimationFrame(loop);
+</script>
+</body>
+</html>
