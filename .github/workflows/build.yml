@@ -1,0 +1,238 @@
+name: Build WaterSims APK
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v4
+
+      - name: Install Android SDK 35
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Generate Android project
+        run: |
+          set -e
+          if [ ! -f app/src/main/assets/index.html ]; then
+            echo "::error::Upload app/src/main/assets/index.html (the full game file ending with </html>) first."
+            exit 1
+          fi
+          mkdir -p app/src/main/java/com/watersims/zm app/src/main/res/values app/src/main/res/drawable app/src/main/res/mipmap-anydpi-v26
+
+          cat > settings.gradle.kts <<'EOF'
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          dependencyResolutionManagement { repositories { google(); mavenCentral() } }
+          rootProject.name = "WaterSims"
+          include(":app")
+          EOF
+
+          cat > build.gradle.kts <<'EOF'
+          plugins {
+              id("com.android.application") version "8.5.2" apply false
+              id("org.jetbrains.kotlin.android") version "2.0.20" apply false
+          }
+          EOF
+
+          cat > gradle.properties <<'EOF'
+          android.useAndroidX=true
+          android.nonTransitiveRClass=true
+          android.suppressUnsupportedCompileSdk=35
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          EOF
+
+          cat > app/build.gradle.kts <<'EOF'
+          plugins {
+              id("com.android.application")
+              id("org.jetbrains.kotlin.android")
+          }
+          android {
+              namespace = "com.watersims.zm"
+              compileSdk = 35
+              defaultConfig {
+                  applicationId = "com.watersims.zm"
+                  minSdk = 26
+                  targetSdk = 35
+                  versionCode = 1
+                  versionName = "1.0.0"
+              }
+              buildTypes { release { isMinifyEnabled = false } }
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+              kotlinOptions { jvmTarget = "17" }
+              buildFeatures { buildConfig = true }
+          }
+          dependencies {
+              implementation("androidx.appcompat:appcompat:1.7.0")
+              implementation("androidx.core:core-ktx:1.13.1")
+              implementation("androidx.webkit:webkit:1.11.0")
+          }
+          EOF
+
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <application
+                  android:allowBackup="true"
+                  android:hardwareAccelerated="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:roundIcon="@mipmap/ic_launcher_round"
+                  android:label="@string/app_name"
+                  android:supportsRtl="true"
+                  android:theme="@style/Theme.WaterSims">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:screenOrientation="portrait"
+                      android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density"
+                      android:windowSoftInputMode="adjustResize">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          cat > app/src/main/java/com/watersims/zm/MainActivity.kt <<'EOF'
+          package com.watersims.zm
+
+          import android.annotation.SuppressLint
+          import android.graphics.Color
+          import android.os.Bundle
+          android.view.HapticFeedbackConstants
+          import android.view.WindowManager
+          import android.webkit.*
+          import android.widget.Toast
+          import androidx.activity.OnBackPressedCallback
+          import androidx.appcompat.app.AppCompatActivity
+          import androidx.webkit.WebViewAssetLoader
+
+          class MainActivity : AppCompatActivity() {
+              private lateinit var web: WebView
+              private lateinit var loader: WebViewAssetLoader
+
+              @SuppressLint("SetJavaScriptEnabled")
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  if (BuildConfig.DEBUG) WebView.setWebContentsDebuggingEnabled(true)
+                  window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                  loader = WebViewAssetLoader.Builder()
+                      .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this)).build()
+                  web = WebView(this)
+                  web.setBackgroundColor(Color.parseColor("#070D15"))
+                  setContentView(web)
+                  with(web.settings) {
+                      javaScriptEnabled = true
+                      domStorageEnabled = true
+                      mediaPlaybackRequiresUserGesture = false
+                      textZoom = 100
+                      useWideViewPort = true
+                      loadWithOverviewMode = true
+                      setSupportZoom(false)
+                      builtInZoomControls = false
+                      allowFileAccess = false
+                      mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+                      cacheMode = WebSettings.LOAD_DEFAULT
+                  }
+                  web.webViewClient = object : WebViewClient() {
+                      override fun shouldInterceptRequest(v: WebView, r: WebResourceRequest): WebResourceResponse? =
+                          loader.shouldInterceptRequest(r.url) ?: super.shouldInterceptRequest(v, r)
+                  }
+                  web.addJavascriptInterface(Bridge(), "AndroidBridge")
+                  onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+                      override fun handleOnBackPressed() {
+                          web.evaluateJavascript("(function(){try{return window.__onAndroidBack?window.__onAndroidBack():false}catch(e){return false}})()") {
+                              if (it != "true") finish()
+                          }
+                      }
+                  })
+                  web.loadUrl("https://appassets.androidplatform.net/assets/index.html")
+              }
+              override fun onPause() { web.onPause(); super.onPause() }
+              override fun onResume() { super.onResume(); web.onResume() }
+              override fun onDestroy() { web.destroy(); super.onDestroy() }
+
+              inner class Bridge {
+                  @JavascriptInterface fun vibrate(ms: Int) {
+                      runOnUiThread { web.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY) }
+                  }
+                  @JavascriptInterface fun toast(m: String) {
+                      runOnUiThread { Toast.makeText(this@MainActivity, m, Toast.LENGTH_SHORT).show() }
+                  }
+              }
+          }
+          EOF
+
+          cat > app/src/main/res/values/strings.xml <<'EOF'
+          <resources><string name="app_name">WaterSims</string></resources>
+          EOF
+
+          cat > app/src/main/res/values/colors.xml <<'EOF'
+          <resources><color name="night">#070D15</color><color name="aqua">#22D3EE</color></resources>
+          EOF
+
+          cat > app/src/main/res/values/themes.xml <<'EOF'
+          <resources>
+              <style name="Theme.WaterSims" parent="Theme.AppCompat.NoActionBar">
+                  <item name="android:windowBackground">@color/night</item>
+                  <item name="android:statusBarColor">@color/night</item>
+                  <item name="android:navigationBarColor">@color/night</item>
+                  <item name="android:windowLightStatusBar">false</item>
+                  <item name="colorPrimary">@color/aqua</item>
+              </style>
+          </resources>
+          EOF
+
+          cat > app/src/main/res/drawable/ic_launcher_foreground.xml <<'EOF'
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+              <path android:pathData="M54,20 C54,20 36,42 36,55 a18,18 0 0 0 36,0 C72,42 54,20 54,20 Z" android:fillColor="#22D3EE"/>
+              <path android:pathData="M42,58 h24 M46,66 h16" android:strokeColor="#F97316" android:strokeWidth="4" android:strokeLineCap="round" android:fillColor="#00000000"/>
+              <path android:pathData="M54,50 m-5,0 a5,5 0 1 0 10,0 a5,5 0 1 0 -10,0" android:fillColor="#FBBF24"/>
+          </vector>
+          EOF
+
+          cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/night"/>
+              <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+          </adaptive-icon>
+          EOF
+
+          cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/night"/>
+              <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+          </adaptive-icon>
+          EOF
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Assemble APK
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Name APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk WaterSims.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WaterSims-APK
+          path: WaterSims.apk
+          if-no-files-found: error
