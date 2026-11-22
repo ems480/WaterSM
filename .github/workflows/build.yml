@@ -23,7 +23,7 @@ jobs:
         run: |
           set -e
           if [ ! -f app/src/main/assets/index.html ]; then
-            echo "::error::Upload app/src/main/assets/index.html (the full game file ending with </html>) first."
+            echo "::error::Upload app/src/main/assets/index.html (the full game file ending with </html>) first, then re-run."
             exit 1
           fi
           mkdir -p app/src/main/java/com/watersims/zm app/src/main/res/values app/src/main/res/drawable app/src/main/res/mipmap-anydpi-v26
@@ -47,6 +47,7 @@ jobs:
           android.nonTransitiveRClass=true
           android.suppressUnsupportedCompileSdk=35
           org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          kotlin.code.style=official
           EOF
 
           cat > app/build.gradle.kts <<'EOF'
@@ -64,7 +65,12 @@ jobs:
                   versionCode = 1
                   versionName = "1.0.0"
               }
-              buildTypes { release { isMinifyEnabled = false } }
+              buildTypes {
+                  release {
+                      isMinifyEnabled = false
+                      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+                  }
+              }
               compileOptions {
                   sourceCompatibility = JavaVersion.VERSION_17
                   targetCompatibility = JavaVersion.VERSION_17
@@ -79,6 +85,12 @@ jobs:
           }
           EOF
 
+          cat > app/proguard-rules.pro <<'EOF'
+          -keepclassmembers class com.watersims.zm.MainActivity$Bridge {
+              @android.webkit.JavascriptInterface <methods>;
+          }
+          EOF
+
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -90,11 +102,11 @@ jobs:
                   android:roundIcon="@mipmap/ic_launcher_round"
                   android:label="@string/app_name"
                   android:supportsRtl="true"
+                  android:usesCleartextTraffic="false"
                   android:theme="@style/Theme.WaterSims">
                   <activity
                       android:name=".MainActivity"
                       android:exported="true"
-                      android:screenOrientation="portrait"
                       android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density"
                       android:windowSoftInputMode="adjustResize">
                       <intent-filter>
@@ -110,30 +122,49 @@ jobs:
           package com.watersims.zm
 
           import android.annotation.SuppressLint
+          import android.content.ContentValues
           import android.graphics.Color
+          import android.net.Uri
+          import android.os.Build
           import android.os.Bundle
-          android.view.HapticFeedbackConstants
+          import android.os.Environment
+          import android.provider.MediaStore
+          import android.util.Base64
+          import android.util.Log
+          import android.view.HapticFeedbackConstants
           import android.view.WindowManager
-          import android.webkit.*
+          import android.webkit.ConsoleMessage
+          import android.webkit.JavascriptInterface
+          import android.webkit.WebChromeClient
+          import android.webkit.WebResourceRequest
+          import android.webkit.WebResourceResponse
+          import android.webkit.WebView
+          import android.webkit.WebViewClient
           import android.widget.Toast
           import androidx.activity.OnBackPressedCallback
           import androidx.appcompat.app.AppCompatActivity
           import androidx.webkit.WebViewAssetLoader
+          import java.io.File
 
           class MainActivity : AppCompatActivity() {
+
               private lateinit var web: WebView
-              private lateinit var loader: WebViewAssetLoader
+              private lateinit var assetLoader: WebViewAssetLoader
 
               @SuppressLint("SetJavaScriptEnabled")
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
                   if (BuildConfig.DEBUG) WebView.setWebContentsDebuggingEnabled(true)
                   window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                  loader = WebViewAssetLoader.Builder()
-                      .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this)).build()
+
+                  assetLoader = WebViewAssetLoader.Builder()
+                      .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
+                      .build()
+
                   web = WebView(this)
-                  web.setBackgroundColor(Color.parseColor("#070D15"))
+                  web.setBackgroundColor(Color.parseColor("#04141A"))
                   setContentView(web)
+
                   with(web.settings) {
                       javaScriptEnabled = true
                       domStorageEnabled = true
@@ -144,71 +175,129 @@ jobs:
                       setSupportZoom(false)
                       builtInZoomControls = false
                       allowFileAccess = false
-                      mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-                      cacheMode = WebSettings.LOAD_DEFAULT
+                      allowContentAccess = false
+                      mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
+                      cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
                   }
+
                   web.webViewClient = object : WebViewClient() {
-                      override fun shouldInterceptRequest(v: WebView, r: WebResourceRequest): WebResourceResponse? =
-                          loader.shouldInterceptRequest(r.url) ?: super.shouldInterceptRequest(v, r)
+                      override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
+                          assetLoader.shouldInterceptRequest(request.url) ?: super.shouldInterceptRequest(view, request)
+                      override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean = false
+                  }
+                  web.webChromeClient = object : WebChromeClient() {
+                      override fun onConsoleMessage(msg: ConsoleMessage): Boolean {
+                          Log.d("WaterSims", "${msg.message()} (${msg.sourceId()}:${msg.lineNumber()})")
+                          return true
+                      }
                   }
                   web.addJavascriptInterface(Bridge(), "AndroidBridge")
+
                   onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
                       override fun handleOnBackPressed() {
-                          web.evaluateJavascript("(function(){try{return window.__onAndroidBack?window.__onAndroidBack():false}catch(e){return false}})()") {
-                              if (it != "true") finish()
-                          }
+                          web.evaluateJavascript(
+                              "(function(){try{return window.__onAndroidBack?window.__onAndroidBack():false}catch(e){return false}})()"
+                          ) { result -> if (result != "true") finish() }
                       }
                   })
+
                   web.loadUrl("https://appassets.androidplatform.net/assets/index.html")
               }
+
               override fun onPause() { web.onPause(); super.onPause() }
               override fun onResume() { super.onResume(); web.onResume() }
               override fun onDestroy() { web.destroy(); super.onDestroy() }
 
               inner class Bridge {
-                  @JavascriptInterface fun vibrate(ms: Int) {
-                      runOnUiThread { web.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY) }
+                  @JavascriptInterface
+                  fun vibrate(ms: Int) {
+                      runOnUiThread {
+                          web.performHapticFeedback(
+                              if (ms > 20) HapticFeedbackConstants.LONG_PRESS else HapticFeedbackConstants.VIRTUAL_KEY
+                          )
+                      }
                   }
-                  @JavascriptInterface fun toast(m: String) {
-                      runOnUiThread { Toast.makeText(this@MainActivity, m, Toast.LENGTH_SHORT).show() }
+
+                  @JavascriptInterface
+                  fun toast(msg: String) {
+                      runOnUiThread { Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show() }
+                  }
+
+                  @JavascriptInterface
+                  fun saveFile(name: String, mime: String, b64: String) {
+                      try {
+                          val bytes = Base64.decode(b64, Base64.DEFAULT)
+                          val where: String
+                          if (Build.VERSION.SDK_INT >= 29) {
+                              val values = ContentValues().apply {
+                                  put(MediaStore.Downloads.DISPLAY_NAME, name)
+                                  put(MediaStore.Downloads.MIME_TYPE, mime)
+                                  put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/WaterSims")
+                              }
+                              val uri: Uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                                  ?: throw IllegalStateException("MediaStore insert failed")
+                              contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+                                  ?: throw IllegalStateException("openOutputStream failed")
+                              where = "Downloads/WaterSims/$name"
+                          } else {
+                              val dir = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "WaterSims")
+                              dir.mkdirs()
+                              File(dir, name).writeBytes(bytes)
+                              where = File(dir, name).absolutePath
+                          }
+                          runOnUiThread { Toast.makeText(this@MainActivity, "Report saved · $where", Toast.LENGTH_LONG).show() }
+                      } catch (e: Exception) {
+                          runOnUiThread { Toast.makeText(this@MainActivity, "Save failed: ${e.message}", Toast.LENGTH_LONG).show() }
+                      }
                   }
               }
           }
           EOF
 
           cat > app/src/main/res/values/strings.xml <<'EOF'
-          <resources><string name="app_name">WaterSims</string></resources>
+          <resources>
+              <string name="app_name">WaterSims</string>
+          </resources>
           EOF
 
           cat > app/src/main/res/values/colors.xml <<'EOF'
-          <resources><color name="night">#070D15</color><color name="aqua">#22D3EE</color></resources>
+          <resources>
+              <color name="abyss">#04141A</color>
+              <color name="aqua">#2FD9E8</color>
+              <color name="copper">#D9743F</color>
+          </resources>
           EOF
 
           cat > app/src/main/res/values/themes.xml <<'EOF'
           <resources>
               <style name="Theme.WaterSims" parent="Theme.AppCompat.NoActionBar">
-                  <item name="android:windowBackground">@color/night</item>
-                  <item name="android:statusBarColor">@color/night</item>
-                  <item name="android:navigationBarColor">@color/night</item>
+                  <item name="android:windowBackground">@color/abyss</item>
+                  <item name="android:statusBarColor">@color/abyss</item>
+                  <item name="android:navigationBarColor">@color/abyss</item>
                   <item name="android:windowLightStatusBar">false</item>
                   <item name="colorPrimary">@color/aqua</item>
+                  <item name="colorAccent">@color/copper</item>
               </style>
           </resources>
           EOF
 
           cat > app/src/main/res/drawable/ic_launcher_foreground.xml <<'EOF'
           <vector xmlns:android="http://schemas.android.com/apk/res/android"
-              android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-              <path android:pathData="M54,20 C54,20 36,42 36,55 a18,18 0 0 0 36,0 C72,42 54,20 54,20 Z" android:fillColor="#22D3EE"/>
-              <path android:pathData="M42,58 h24 M46,66 h16" android:strokeColor="#F97316" android:strokeWidth="4" android:strokeLineCap="round" android:fillColor="#00000000"/>
-              <path android:pathData="M54,50 m-5,0 a5,5 0 1 0 10,0 a5,5 0 1 0 -10,0" android:fillColor="#FBBF24"/>
+              android:width="108dp" android:height="108dp"
+              android:viewportWidth="108" android:viewportHeight="108">
+              <path android:pathData="M54,20 C54,20 36,42 36,55 a18,18 0 0 0 36,0 C72,42 54,20 54,20 Z"
+                  android:fillColor="#2FD9E8"/>
+              <path android:pathData="M45,53 a9,9 0 0 0 9,11"
+                  android:strokeColor="#EAFCFF" android:strokeWidth="3" android:strokeLineCap="round" android:fillColor="#00000000"/>
+              <path android:pathData="M30,76 h48 a3,3 0 0 1 0,6 h-48 a3,3 0 0 1 0,-6 Z" android:fillColor="#D9743F"/>
+              <path android:pathData="M36,86 h36 a3,3 0 0 1 0,6 h-36 a3,3 0 0 1 0,-6 Z" android:fillColor="#FFC247"/>
           </vector>
           EOF
 
           cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-              <background android:drawable="@color/night"/>
+              <background android:drawable="@color/abyss"/>
               <foreground android:drawable="@drawable/ic_launcher_foreground"/>
           </adaptive-icon>
           EOF
@@ -216,7 +305,7 @@ jobs:
           cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-              <background android:drawable="@color/night"/>
+              <background android:drawable="@color/abyss"/>
               <foreground android:drawable="@drawable/ic_launcher_foreground"/>
           </adaptive-icon>
           EOF
@@ -225,10 +314,10 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Assemble APK
+      - name: Assemble installable APK
         run: gradle assembleDebug --no-daemon --stacktrace
 
-      - name: Name APK
+      - name: Name the APK
         run: cp app/build/outputs/apk/debug/app-debug.apk WaterSims.apk
 
       - uses: actions/upload-artifact@v4
